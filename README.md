@@ -1,100 +1,36 @@
-# NFAS
-Nigeria Flood Alert System, enriching grassroot communities and farmers with needed timely flood information to prevent flooding losses
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-# Flood Sentinel Nigeria 
+## Getting Started
 
-A multilingual flood alert and advisory system that transforms complex flood risk data into clear, actionable warnings for communities across Nigeria.
+First, run the development server:
 
-## Problem
-
-Nigeria already has flood forecasting data (e.g., NIHSA, Google Flood Models), but:
-
-- It does not reach local communities effectively
-- It is not easy to understand
-- It is not actionable
-- It is not localized or multilingual
-
-This leads to preventable loss of lives and property.
-
-## Solution
-
-Flood Sentinel Nigeria bridges this gap by:
-
-- Accepting a user's **Local Government Area (LGA)**
-- Retrieving flood risk data
-- Converting it into **plain-language advice**
-- Translating into **English, Hausa, Yoruba, and Igbo**
-- Formatting it into **SMS-ready alerts (≤160 characters)**
-
-##  MVP Scope
-
-### Features
-- LGA-based flood risk query
-- AI-generated plain-language alerts
-- Multilingual output (EN, HA, YO, IG)
-- SMS-ready formatting
-- Lightweight web interface
-
-### Not Included (Phase 2)
-- Live satellite data integration
-- Direct NIHSA API connection
-- Mobile app
-- Real-time push notifications
-
----
-
-## How It Works
-
-1. User selects or inputs their LGA
-2. System retrieves flood risk level from dataset
-3. AI generates:
-   - Risk explanation
-   - Safety advice
-4. Output is:
-   - Translated into 4 languages
-   - Condensed into SMS format
-
----
-
-## Tech Stack
-
-- **Frontend:** Web (React / Next.js or similar)
-- **Backend:** Node.js / Python (API layer)
-- **AI Engine:** Google Gemini API
-- **Data Source:** Curated flood-risk dataset (LGA-based)
-- **Deployment:** Vercel / Cloudflare / Firebase
-
----
-
-## Project Structure
-
-/frontend
-/backend
-/data
-/docs
-
-## 📊 Data Model (MVP)
-
-```json
-{
-  "lga": "Lokoja",
-  "state": "Kogi",
-  "risk_level": "high",
-  "timeframe": "7 days"
-}
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## Supported Languages
-English
-Hausa
-Yoruba
-Igbo
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Contributing
-Pick an issue
-Create a branch
-Submit a PR
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-⚠️ Disclaimer
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-This system provides advisory alerts and does not replace official emergency services.
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
