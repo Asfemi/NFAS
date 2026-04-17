@@ -12,6 +12,7 @@ It accepts an LGA, looks up flood risk data, and returns clear SMS-ready advisor
 ## MVP Features
 
 - LGA-based flood risk query from local dataset
+- Live flood risk lookup from Open-Meteo Flood API (with local fallback)
 - Plain-language advisory generation
 - Multilingual output in four languages
 - SMS-ready messages capped at 160 characters
