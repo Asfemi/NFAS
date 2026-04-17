@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NFAS - Flood Sentinel Nigeria
 
-## Getting Started
+Flood Sentinel Nigeria is a multilingual flood alert and advisory MVP for Nigerian communities and farmers.
 
-First, run the development server:
+It accepts an LGA, looks up flood risk data, and returns clear SMS-ready advisories in:
+
+- English
+- Hausa
+- Yoruba
+- Igbo
+
+## MVP Features
+
+- LGA-based flood risk query from local dataset
+- Plain-language advisory generation
+- Multilingual output in four languages
+- SMS-ready messages capped at 160 characters
+- Lightweight web interface
+
+## Tech Stack
+
+- Frontend: Next.js (App Router)
+- Backend: Next.js Route Handlers + simple service modules
+- AI: Gemini API (optional, with fallback)
+- Data: Local curated JSON dataset
+
+## Project Structure
+
+- `frontend` - UI components
+- `backend` - alert generation and lookup logic
+- `data` - LGA flood-risk dataset
+- `docs` - scope and supporting documentation
+
+## Environment Setup
+
+Create a `.env.local` file:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+GEMINI_API_KEY=your_api_key_here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+If `GEMINI_API_KEY` is not set, the app still works with built-in fallback advisories.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run Locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000).
 
-To learn more about Next.js, take a look at the following resources:
+## Disclaimer
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This system provides advisory alerts and does not replace official emergency services.

@@ -1,0 +1,14 @@
+[
+  { "lga": "Lokoja", "state": "Kogi", "risk_level": "high", "timeframe": "7 days" },
+  { "lga": "Ahoada East", "state": "Rivers", "risk_level": "high", "timeframe": "7 days" },
+  { "lga": "Makurdi", "state": "Benue", "risk_level": "high", "timeframe": "7 days" },
+  { "lga": "Yenagoa", "state": "Bayelsa", "risk_level": "high", "timeframe": "7 days" },
+  { "lga": "Aniocha North", "state": "Delta", "risk_level": "medium", "timeframe": "7 days" },
+  { "lga": "Ado", "state": "Benue", "risk_level": "medium", "timeframe": "7 days" },
+  { "lga": "Sokoto North", "state": "Sokoto", "risk_level": "low", "timeframe": "7 days" },
+  { "lga": "Ikorodu", "state": "Lagos", "risk_level": "medium", "timeframe": "7 days" },
+  { "lga": "Aba North", "state": "Abia", "risk_level": "medium", "timeframe": "7 days" },
+  { "lga": "Nasarawa", "state": "Nasarawa", "risk_level": "low", "timeframe": "7 days" },
+  { "lga": "Gusau", "state": "Zamfara", "risk_level": "low", "timeframe": "7 days" },
+  { "lga": "Maiduguri", "state": "Borno", "risk_level": "low", "timeframe": "7 days" }
+]
