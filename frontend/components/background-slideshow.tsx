@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 const images = [
+  "/flood_images/image1170x530cropped.jpg",
   "/flood_images/49aa56b0-1620-11f0-a367-317c298ca3ca.jpg.webp",
   "/flood_images/flood1.jpg",
-  "/flood_images/image1170x530cropped.jpg",
   "/flood_images/486875278_4212896205597394_6660289909213668199_n.jpg",
   "/flood_images/FG-Warns-of-High-Flood-Risk-in-33-States.webp",
   "/flood_images/Flooded-Ala-Obaje-Community-Igalamela-LGA-Kogi-State.-Photo-The-ICIR..jpg",

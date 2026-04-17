@@ -5,6 +5,8 @@ export interface FloodRiskRecord {
   state: string;
   risk_level: RiskLevel;
   timeframe: string;
+  latitude: number;
+  longitude: number;
 }
 
 export type LanguageCode = "en" | "ha" | "yo" | "ig";
