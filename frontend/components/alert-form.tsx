@@ -4,6 +4,13 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type LanguageCode = "en" | "ha" | "yo" | "ig";
 
+interface LGAOption {
+  lga: string;
+  state: string;
+  latitude: number;
+  longitude: number;
+}
+
 interface AlertResponse {
   record: {
     lga: string;
@@ -23,25 +30,39 @@ const languageLabels: Record<LanguageCode, string> = {
 
 export function AlertForm() {
   const [lga, setLga] = useState("");
-  const [knownLgas, setKnownLgas] = useState<string[]>([]);
+  const [knownLgas, setKnownLgas] = useState<LGAOption[]>([]);
   const [result, setResult] = useState<AlertResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function loadLgas() {
-      const response = await fetch("/api/lgas");
-      const payload = (await response.json()) as { lgas?: string[] };
-      setKnownLgas(payload.lgas ?? []);
+      try {
+        const response = await fetch("/api/lgas?format=full");
+        if (!response.ok) throw new Error("Failed to fetch LGAs");
+        
+        const payload = (await response.json()) as { 
+          metadata?: Record<string, unknown>;
+          lgas?: LGAOption[] 
+        };
+        
+        // Ensure we have an array of objects with lga and state properties
+        if (Array.isArray(payload.lgas)) {
+          setKnownLgas(payload.lgas.filter(entry => entry?.lga && entry?.state));
+        } else {
+          setKnownLgas([]);
+        }
+      } catch (err) {
+        console.error("Error loading LGAs:", err);
+        setKnownLgas([]);
+      }
     }
 
-    loadLgas().catch(() => {
-      setKnownLgas([]);
-    });
+    loadLgas();
   }, []);
 
   const placeholder = useMemo(
-    () => (knownLgas.length ? `Try: ${knownLgas.slice(0, 3).join(", ")}` : "e.g. Lokoja"),
+    () => (knownLgas.length ? `Try: ${knownLgas.slice(0, 3).map(l => l.lga).join(", ")}` : "e.g. Lokoja"),
     [knownLgas],
   );
 
@@ -98,8 +119,11 @@ export function AlertForm() {
             className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-zinc-900 outline-none ring-0 focus:border-zinc-500"
           />
           <datalist id="lga-options">
-            {knownLgas.map((entry) => (
-              <option key={entry} value={entry} />
+            {knownLgas.map((entry, idx) => (
+              <option 
+                key={entry?.lga && entry?.state ? `${entry.lga}_${entry.state}` : `lga-${idx}`}
+                value={entry?.lga ?? ""}
+              />
             ))}
           </datalist>
           <button
