@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { SMSAlertComponent } from "./sms-alert";
 
 type LanguageCode = "en" | "ha" | "yo" | "ig";
 
@@ -232,6 +233,24 @@ export function AlertForm() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* SMS Alert Subscription */}
+          <div className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  📱
+                  Stay Updated via SMS
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Subscribe to get flood alerts sent directly to your phone in your preferred language.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <SMSAlertComponent lga={result.record.lga} state={result.record.state} />
             </div>
           </div>
         </div>
