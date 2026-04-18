@@ -87,6 +87,10 @@ function SmsDeliveryNotice({ sms }: { sms: SmsGatewayDeliveryResult }) {
     );
   }
 
+  const unauthorized = sms.errors.some((line) =>
+    line.toLowerCase().includes("unauthorized"),
+  );
+
   return (
     <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">
       <p className="font-medium">SMS delivery incomplete</p>
@@ -95,6 +99,16 @@ function SmsDeliveryNotice({ sms }: { sms: SmsGatewayDeliveryResult }) {
         {sms.local === "sent" ? "submitted" : "failed"}
         {sms.phoneE164 ? ` · ${sms.phoneE164}` : ""}
       </p>
+      {unauthorized ? (
+        <p className="mt-2 rounded-md border border-amber-200/80 bg-amber-100/40 px-2 py-1.5 text-xs leading-relaxed text-amber-950">
+          <span className="font-semibold">401 Unauthorized:</span> your server env{" "}
+          <code className="rounded bg-amber-100/90 px-1">SMSGATE_USERNAME</code> /{" "}
+          <code className="rounded bg-amber-100/90 px-1">SMSGATE_PASSWORD</code> must match
+          the cloud API credentials from the SMSGate app. Update{" "}
+          <code className="rounded bg-amber-100/90 px-1">.env.local</code>, restart{" "}
+          <code className="rounded bg-amber-100/90 px-1">npm run dev</code>, then try again.
+        </p>
+      ) : null}
       {sms.errors.length > 0 ? (
         <ul className="mt-2 list-inside list-disc text-xs text-amber-900">
           {sms.errors.map((line, index) => (
@@ -126,6 +140,7 @@ export function PersonalizedAlertsModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PersonalizedAlertPayload | null>(null);
+  const [smsTab, setSmsTab] = useState<"en" | "local">("en");
 
   useEffect(() => {
     if (!open) {
@@ -153,6 +168,7 @@ export function PersonalizedAlertsModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSmsTab("en");
     setResult(null);
 
     if (!phone.trim()) {
@@ -184,6 +200,7 @@ export function PersonalizedAlertsModal({
         return;
       }
 
+      setSmsTab("en");
       setResult(payload as PersonalizedAlertPayload);
     } catch {
       setError("Network error. Please try again.");
@@ -356,30 +373,67 @@ export function PersonalizedAlertsModal({
                 </motion.div>
               ) : null}
               <motion.p variants={resultItem} className="text-sm font-medium text-zinc-800">
-                Your tailored messages ({regionalLabels[result.localLanguage]} + English)
+                Your tailored SMS (≤160 chars)
               </motion.p>
-              <motion.article
+              <motion.div
                 variants={resultItem}
                 className="rounded-xl border border-zinc-200 p-3"
               >
-                <div className="mb-1 flex justify-between text-xs text-zinc-500">
-                  <span className="font-semibold text-zinc-700">English</span>
-                  <span>{result.alerts.en.length}/160</span>
-                </div>
-                <p className="text-sm text-zinc-800">{result.alerts.en}</p>
-              </motion.article>
-              <motion.article
-                variants={resultItem}
-                className="rounded-xl border border-zinc-200 p-3"
-              >
-                <div className="mb-1 flex justify-between text-xs text-zinc-500">
-                  <span className="font-semibold text-zinc-700">
+                <div
+                  role="tablist"
+                  aria-label="SMS language"
+                  className="mb-3 flex gap-1 border-b border-zinc-200 pb-0"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    id="pa-sms-tab-en"
+                    aria-selected={smsTab === "en"}
+                    aria-controls="pa-sms-panel"
+                    onClick={() => setSmsTab("en")}
+                    className={`rounded-t-lg px-3 py-2 text-xs font-medium transition-colors sm:text-sm ${
+                      smsTab === "en"
+                        ? "border border-b-0 border-zinc-200 bg-white text-zinc-900 -mb-px"
+                        : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                    }`}
+                  >
+                    English
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    id="pa-sms-tab-local"
+                    aria-selected={smsTab === "local"}
+                    aria-controls="pa-sms-panel"
+                    onClick={() => setSmsTab("local")}
+                    className={`rounded-t-lg px-3 py-2 text-xs font-medium transition-colors sm:text-sm ${
+                      smsTab === "local"
+                        ? "border border-b-0 border-zinc-200 bg-white text-zinc-900 -mb-px"
+                        : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                    }`}
+                  >
                     {regionalLabels[result.localLanguage]}
-                  </span>
-                  <span>{result.alerts.local.length}/160</span>
+                  </button>
                 </div>
-                <p className="text-sm text-zinc-800">{result.alerts.local}</p>
-              </motion.article>
+                <article
+                  role="tabpanel"
+                  id="pa-sms-panel"
+                  aria-labelledby={
+                    smsTab === "en" ? "pa-sms-tab-en" : "pa-sms-tab-local"
+                  }
+                >
+                  <div className="mb-1 flex justify-end text-xs text-zinc-500">
+                    <span>
+                      {smsTab === "en"
+                        ? `${result.alerts.en.length}/160`
+                        : `${result.alerts.local.length}/160`}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-zinc-800">
+                    {smsTab === "en" ? result.alerts.en : result.alerts.local}
+                  </p>
+                </article>
+              </motion.div>
             </motion.div>
           </motion.div>
         ) : null}

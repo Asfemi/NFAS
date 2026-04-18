@@ -145,6 +145,16 @@ function appendGenericFailureHints(errors: string[]): void {
   );
 }
 
+function appendUnauthorizedHints(errors: string[]): void {
+  const blob = errors.join(" ").toLowerCase();
+  if (!blob.includes("unauthorized")) {
+    return;
+  }
+  errors.push(
+    "HTTP 401 Unauthorized from the SMSGate cloud API almost always means SMSGATE_USERNAME / SMSGATE_PASSWORD (or ASG_*) do not match your account. In the SMSGate Android app: enable cloud mode, open account/API credentials, copy the username and password into the server .env, restart the dev server, and try again. See https://sms-gate.app/ and https://docs.sms-gate.app/",
+  );
+}
+
 function pushError(errors: string[], label: string, err: unknown) {
   const message = err instanceof Error ? err.message : String(err);
   errors.push(`${label}: ${message}`);
@@ -239,6 +249,7 @@ export async function sendBilingualAlertsViaSmsgate(
   }
 
   appendGenericFailureHints(errors);
+  appendUnauthorizedHints(errors);
 
   const messageIds = [englishState?.id, localState?.id].filter(
     (id): id is string => Boolean(id),
@@ -328,6 +339,7 @@ export async function sendSmsTextViaSmsgate(
     const message = e instanceof Error ? e.message : String(e);
     const errors = [message];
     appendGenericFailureHints(errors);
+    appendUnauthorizedHints(errors);
     return { attempted: true, status: "failed", errors };
   }
 }
