@@ -1,4 +1,7 @@
 import { buildFloodAlertResponse } from "@/backend/alerts";
+import { isFloodForecastUnavailableError } from "@/backend/forecast-error";
+import { isGeminiAdvisoryError } from "@/backend/gemini-error";
+import { isNigeriaGeoDatasetError } from "@/backend/nigeria-geo";
 import { normalizePhoneNumber, validateNigerianPhoneNumber } from "@/backend/sms";
 import {
   createSubscription,
@@ -172,6 +175,15 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   } catch (error) {
+    if (isGeminiAdvisoryError(error)) {
+      return Response.json({ error: error.message }, { status: error.httpStatus });
+    }
+    if (isFloodForecastUnavailableError(error)) {
+      return Response.json({ error: error.message }, { status: 502 });
+    }
+    if (isNigeriaGeoDatasetError(error)) {
+      return Response.json({ error: error.message }, { status: 503 });
+    }
     console.error("SMS API error:", error);
     return Response.json({ error: "Failed to process SMS request" }, { status: 500 });
   }

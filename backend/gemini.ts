@@ -4,6 +4,7 @@ import {
   RegionalLanguageCode,
 } from "@/backend/types";
 import { clampOutlook, toSmsLength } from "@/backend/sms";
+import { GeminiAdvisoryError } from "@/backend/gemini-error";
 
 interface GeminiResponse {
   candidates?: Array<{
@@ -34,6 +35,7 @@ function buildDualPrompt(
     "Location and risk inputs:",
     `LGA: ${record.lga}`,
     `State: ${record.state}`,
+    `Approximate centroid: ${record.latitude.toFixed(4)}°N, ${record.longitude.toFixed(4)}°E`,
     `Current modelled risk label (from river forecast): ${record.risk_level}`,
     `Near-term model window described as: ${record.timeframe}`,
     ...(hydrologyContext
@@ -52,13 +54,14 @@ function buildDualPrompt(
     '- "outlook": two SHORT paragraphs (English and local) giving a practical ~3 MONTH seasonal flood outlook for this LGA/state in Nigeria.',
     "",
     "Outlook rules:",
-    "1) Explain typical rainy-season behaviour for this broad region, whether the area is generally flood-prone, what people can expect in the coming months, and practical preparedness (drains, storage, livestock, crops, travel, early warnings).",
-    "2) Tie the opening sentence lightly to the current hydrology snapshot, then broaden to seasonal expectations — do not pretend the 7-day river chart is a 90-day deterministic forecast.",
-    "3) Each outlook string: about 350–900 characters (never above 1200). No bullet markdown; plain sentences.",
-    "4) If farm/community details were provided, weave in one or two concrete, relevant suggestions.",
-    "5) End with a light advisory disclaimer (one short phrase) that this is guidance and official sources (e.g. NIHSA, LEMA) should be followed for emergencies.",
-    "6) Never include phone numbers, bank details, or national IDs in any field.",
-    `7) In both "local" fields, write fully in ${localName}.`,
+    "1) Uniqueness: Do not reuse generic boilerplate that could apply unchanged to another LGA. Open both outlook paragraphs by naming this LGA and state and weaving in the exact peak discharge value and date from the hydrology line (and grid coordinates if useful). If two LGAs share the same risk label, wording must still differ because location and numbers differ.",
+    "2) Explain typical rainy-season behaviour for this state/region, whether the area is generally flood-prone, what people can expect in the coming months, and practical preparedness (drains, storage, livestock, crops, travel, early warnings).",
+    "3) After the opening, broaden to seasonal expectations — do not pretend the 7-day river chart is a 90-day deterministic forecast.",
+    "4) Each outlook string: about 350–900 characters (never above 1200). No bullet markdown; plain sentences.",
+    "5) If farm/community details were provided, weave in one or two concrete, relevant suggestions.",
+    "6) End with a light advisory disclaimer (one short phrase) that this is guidance and official sources (e.g. NIHSA, LEMA) should be followed for emergencies.",
+    "7) Never include phone numbers, bank details, or national IDs in any field.",
+    `8) In both "local" fields, write fully in ${localName}.`,
   ].join("\n");
 }
 
@@ -67,7 +70,7 @@ function parseDualPayload(raw: string): BilingualFloodContent | null {
   const candidate = trimmed
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
-    .replace(/\s*```$/, "");
+    .replace(/\s*```$/i, "");
 
   try {
     const parsed = JSON.parse(candidate) as {
@@ -99,15 +102,21 @@ function parseDualPayload(raw: string): BilingualFloodContent | null {
   }
 }
 
+/**
+ * Requires `GEMINI_API_KEY` and a valid model JSON response; otherwise throws {@link GeminiAdvisoryError}.
+ */
 export async function generateGeminiFloodBundle(
   record: FloodRiskRecord,
   localLanguage: RegionalLanguageCode,
   hydrologyContext?: string,
   siteContext?: string,
-): Promise<BilingualFloodContent | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
+): Promise<BilingualFloodContent> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    return null;
+    throw new GeminiAdvisoryError(
+      "GEMINI_API_KEY is not set on the server. Advisories require Gemini.",
+      503,
+    );
   }
 
   const calendarHint = new Intl.DateTimeFormat("en-NG", {
@@ -139,21 +148,43 @@ export async function generateGeminiFloodBundle(
         },
       ],
       generationConfig: {
-        temperature: 0.35,
+        temperature: 0.55,
         responseMimeType: "application/json",
       },
     }),
   });
 
   if (!response.ok) {
-    return null;
+    const errBody = await response.text().catch(() => "");
+    console.error(
+      "[NFAS] Gemini HTTP error:",
+      response.status,
+      errBody.slice(0, 800),
+    );
+    throw new GeminiAdvisoryError(
+      `Gemini API returned HTTP ${response.status}. Check the API key and model availability.`,
+      502,
+    );
   }
 
   const payload = (await response.json()) as GeminiResponse;
   const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
-    return null;
+    console.error("[NFAS] Gemini returned no text in candidates[0].content.parts[0]");
+    throw new GeminiAdvisoryError(
+      "Gemini returned an empty response (no candidate text). Try again or check safety filters.",
+      502,
+    );
   }
 
-  return parseDualPayload(text);
+  const parsed = parseDualPayload(text);
+  if (!parsed) {
+    console.error("[NFAS] Gemini JSON parse failed; raw prefix:", text.slice(0, 400));
+    throw new GeminiAdvisoryError(
+      "Gemini returned invalid JSON or missing sms/outlook fields. Try again.",
+      502,
+    );
+  }
+
+  return parsed;
 }

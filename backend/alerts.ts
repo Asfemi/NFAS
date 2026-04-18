@@ -1,4 +1,3 @@
-import { buildFallbackAlerts, buildFallbackOutlook } from "@/backend/fallback";
 import { findFloodRiskByLga } from "@/backend/data";
 import { generateGeminiFloodBundle } from "@/backend/gemini";
 import {
@@ -9,7 +8,6 @@ import { fetchOpenMeteoFloodForecast } from "@/backend/open-meteo";
 import { getLocalLanguageForState } from "@/backend/regions";
 import { FloodForecastUnavailableError } from "@/backend/forecast-error";
 import {
-  buildFallbackEnglishExtra,
   buildPersonalizedSiteContext,
 } from "@/backend/personalization";
 
@@ -42,29 +40,19 @@ export async function buildFloodAlertResponse(
   const siteContext = personalized
     ? buildPersonalizedSiteContext(personalized)
     : undefined;
-  const fallbackExtra = personalized
-    ? buildFallbackEnglishExtra(personalized)
-    : undefined;
 
   const aiBundle = await generateGeminiFloodBundle(
     effectiveRecord,
     localLanguage,
     hydrologyContext,
     siteContext,
-  ).catch(() => null);
-
-  const alerts =
-    aiBundle?.sms ??
-    buildFallbackAlerts(effectiveRecord, localLanguage, fallbackExtra);
-  const outlook =
-    aiBundle?.outlook ??
-    buildFallbackOutlook(effectiveRecord, localLanguage, fallbackExtra);
+  );
 
   return {
     record: effectiveRecord,
     localLanguage,
-    alerts,
-    outlook,
+    alerts: aiBundle.sms,
+    outlook: aiBundle.outlook,
     openMeteo: forecast,
     ...(personalized ? { personalized: true as const } : {}),
   };
