@@ -17,6 +17,10 @@ export interface PersonalizedAlertPayload {
     en: string;
     local: string;
   };
+  outlook?: {
+    en: string;
+    local: string;
+  };
   personalized?: boolean;
   smsDelivery?: SmsGatewayDeliveryResult;
 }
@@ -200,17 +204,8 @@ export function PersonalizedAlertsModal({
             <p className="mt-1 text-sm text-zinc-600">
               For <span className="font-medium text-zinc-800">{lga}</span>. Add optional farm or
               community details so the advisory matches your situation. Your number is used on
-              this request to generate tailored text and, if the server is configured, to send SMS
-              through your{" "}
-              <a
-                href="https://sms-gate.app/"
-                className="text-zinc-800 underline underline-offset-2"
-                target="_blank"
-                rel="noreferrer"
-              >
-                SMSGate
-              </a>{" "}
-              account.
+              this request to generate tailored text and is not stored.
+             
             </p>
           </div>
           <button

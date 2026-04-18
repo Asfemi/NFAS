@@ -41,6 +41,10 @@ interface AlertResponse {
     en: string;
     local: string;
   };
+  outlook: {
+    en: string;
+    local: string;
+  };
   openMeteo: OpenMeteoFloodForecast;
   personalized?: boolean;
 }
@@ -59,6 +63,7 @@ export function AlertForm() {
   const [loading, setLoading] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [alertsModalNonce, setAlertsModalNonce] = useState(0);
+  const [outlookTab, setOutlookTab] = useState<"en" | "local">("en");
 
   useEffect(() => {
     async function loadLgas() {
@@ -138,6 +143,7 @@ export function AlertForm() {
         return;
       }
 
+      setOutlookTab("en");
       setResult(payload as AlertResponse);
     } catch {
       setError("Network error. Please try again.");
@@ -241,22 +247,62 @@ export function AlertForm() {
 
       {result ? (
         <div className="mt-6 space-y-4">
-          <article className="rounded-xl border border-zinc-200 p-4">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <h3 className="font-semibold text-zinc-800">English</h3>
-              <span className="text-zinc-500">{result.alerts.en.length}/160</span>
-            </div>
-            <p className="text-zinc-700">{result.alerts.en}</p>
-          </article>
-          <article className="rounded-xl border border-zinc-200 p-4">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <h3 className="font-semibold text-zinc-800">
+          <div className="rounded-xl border border-zinc-200 p-4">
+            <div
+              role="tablist"
+              aria-label="Seasonal outlook language"
+              className="mb-3 flex gap-1 border-b border-zinc-200 pb-0"
+            >
+              <button
+                type="button"
+                role="tab"
+                id="outlook-tab-en"
+                aria-selected={outlookTab === "en"}
+                aria-controls="outlook-panel"
+                onClick={() => setOutlookTab("en")}
+                className={`rounded-t-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  outlookTab === "en"
+                    ? "border border-b-0 border-zinc-200 bg-white text-zinc-900 -mb-px"
+                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="outlook-tab-local"
+                aria-selected={outlookTab === "local"}
+                aria-controls="outlook-panel"
+                onClick={() => setOutlookTab("local")}
+                className={`rounded-t-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  outlookTab === "local"
+                    ? "border border-b-0 border-zinc-200 bg-white text-zinc-900 -mb-px"
+                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                }`}
+              >
                 {regionalLabels[result.localLanguage]}
-              </h3>
-              <span className="text-zinc-500">{result.alerts.local.length}/160</span>
+              </button>
             </div>
-            <p className="text-zinc-700">{result.alerts.local}</p>
-          </article>
+            <article
+              role="tabpanel"
+              id="outlook-panel"
+              aria-labelledby={
+                outlookTab === "en" ? "outlook-tab-en" : "outlook-tab-local"
+              }
+            >
+              <div className="mb-2 flex justify-end">
+                <span className="text-xs text-zinc-400">
+                  {outlookTab === "en"
+                    ? `${result.outlook.en.length} chars`
+                    : `${result.outlook.local.length} chars`}
+                </span>
+              </div>
+              <p className="text-sm leading-relaxed text-zinc-700 whitespace-pre-wrap">
+                {outlookTab === "en" ? result.outlook.en : result.outlook.local}
+              </p>
+            </article>
+          </div>
           <div className="flex justify-center pt-2">
             <button
               type="button"

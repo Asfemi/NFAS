@@ -1,6 +1,6 @@
-import { buildFallbackAlerts } from "@/backend/fallback";
+import { buildFallbackAlerts, buildFallbackOutlook } from "@/backend/fallback";
 import { findFloodRiskByLga } from "@/backend/data";
-import { generateGeminiAlerts } from "@/backend/gemini";
+import { generateGeminiFloodBundle } from "@/backend/gemini";
 import {
   FloodAlertResponse,
   PersonalizedAlertInput,
@@ -46,20 +46,25 @@ export async function buildFloodAlertResponse(
     ? buildFallbackEnglishExtra(personalized)
     : undefined;
 
-  const aiAlerts = await generateGeminiAlerts(
+  const aiBundle = await generateGeminiFloodBundle(
     effectiveRecord,
     localLanguage,
     hydrologyContext,
     siteContext,
   ).catch(() => null);
+
   const alerts =
-    aiAlerts ??
+    aiBundle?.sms ??
     buildFallbackAlerts(effectiveRecord, localLanguage, fallbackExtra);
+  const outlook =
+    aiBundle?.outlook ??
+    buildFallbackOutlook(effectiveRecord, localLanguage, fallbackExtra);
 
   return {
     record: effectiveRecord,
     localLanguage,
     alerts,
+    outlook,
     openMeteo: forecast,
     ...(personalized ? { personalized: true as const } : {}),
   };

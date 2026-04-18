@@ -25,6 +25,12 @@ export interface BilingualAlerts {
   local: string;
 }
 
+/** SMS-sized copy plus longer seasonal outlook from the model. */
+export interface BilingualFloodContent {
+  sms: BilingualAlerts;
+  outlook: BilingualAlerts;
+}
+
 /** One day of GloFAS river discharge (ensemble max) for the model grid cell nearest the LGA. */
 export interface OpenMeteoFloodDay {
   date: string;
@@ -61,7 +67,10 @@ export interface FloodAlertResponse {
   record: FloodRiskRecord;
   /** Auto-derived from state: SW → Yoruba, SE/SS → Igbo, North/NC → Hausa. */
   localLanguage: RegionalLanguageCode;
+  /** SMS-ready (≤160 chars each) for copy/SMS gateway. */
   alerts: BilingualAlerts;
+  /** Short ~3‑month seasonal flood outlook (English + local); primary UI copy. */
+  outlook: BilingualAlerts;
   /** Always present: advisory is based on this forecast, not static catalogue risk. */
   openMeteo: OpenMeteoFloodForecast;
   /** True when phone + optional farm/community context was used to tailor the advisory. */
