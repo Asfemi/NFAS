@@ -1,6 +1,8 @@
 import SmsGatewayClient, {
   type HttpClient,
+  type Message,
   type MessageState,
+  type RecipientState,
   ProcessState,
 } from "android-sms-gateway";
 import type { BilingualAlerts } from "@/backend/types";
@@ -57,6 +59,59 @@ function createFetchHttpClient(): HttpClient {
   };
 }
 
+/** Delivery reports default off — SMSGate docs link them to send failures / limits on some devices. Set `SMSGATE_WITH_DELIVERY_REPORT=1` to enable. */
+function gatewayWantsDeliveryReport(): boolean {
+  const v = process.env.SMSGATE_WITH_DELIVERY_REPORT?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
+/** SIM index (often 0 or 1) when dual-SIM default is wrong or set to “ask every time”. See https://docs.sms-gate.app/faq/errors/ */
+function gatewaySimNumber(): number | undefined {
+  const raw = process.env.SMSGATE_SIM_NUMBER?.trim();
+  if (!raw) {
+    return undefined;
+  }
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 0 && n <= 3 ? n : undefined;
+}
+
+function gatewayMessagePayload(message: string, phoneNumbers: string[]): Message {
+  const simNumber = gatewaySimNumber();
+  return {
+    message,
+    phoneNumbers,
+    withDeliveryReport: gatewayWantsDeliveryReport(),
+    ...(simNumber !== undefined ? { simNumber } : {}),
+  };
+}
+
+const GATEWAY_POLL_INTERVAL_MS = 1_800;
+const GATEWAY_POLL_MAX_MS = 45_000;
+
+function recipientNeedsPoll(recipient: RecipientState | undefined): boolean {
+  return Boolean(recipient && recipient.state === ProcessState.Pending);
+}
+
+function messageNeedsPoll(state: MessageState): boolean {
+  if (state.state === ProcessState.Pending) {
+    return true;
+  }
+  return recipientNeedsPoll(state.recipients[0]);
+}
+
+async function resolveMessageState(
+  client: SmsGatewayClient,
+  initial: MessageState,
+): Promise<MessageState> {
+  let state = initial;
+  const deadline = Date.now() + GATEWAY_POLL_MAX_MS;
+  while (Date.now() < deadline && messageNeedsPoll(state)) {
+    await new Promise((resolve) => setTimeout(resolve, GATEWAY_POLL_INTERVAL_MS));
+    state = await client.getState(state.id);
+  }
+  return state;
+}
+
 function mapSendOutcome(
   state: MessageState | undefined,
   sendError: unknown,
@@ -67,11 +122,27 @@ function mapSendOutcome(
   if (state.state === ProcessState.Failed) {
     return "failed";
   }
+  if (state.state === ProcessState.Pending) {
+    return "failed";
+  }
   const recipient = state.recipients[0];
   if (!recipient || recipient.state === ProcessState.Failed) {
     return "failed";
   }
+  if (recipient.state === ProcessState.Pending) {
+    return "failed";
+  }
   return "sent";
+}
+
+function appendGenericFailureHints(errors: string[]): void {
+  const blob = errors.join(" ").toUpperCase();
+  if (!blob.includes("GENERIC_FAILURE")) {
+    return;
+  }
+  errors.push(
+    "SMSGate / Android: RESULT_ERROR_GENERIC_FAILURE usually means the phone could not send on the cellular stack (SIM, carrier, balance, signal, or dual-SIM routing). Try: set a fixed default SMS SIM (not “Ask every time”), set SMSGATE_SIM_NUMBER=0 or 1 (or 2) to match the SIM that has SMS, confirm SMS permission + airtime/SMS plan, send a test SMS from the stock Messages app on that device, then see https://docs.sms-gate.app/faq/errors/",
+  );
 }
 
 function pushError(errors: string[], label: string, err: unknown) {
@@ -127,23 +198,34 @@ export async function sendBilingualAlertsViaSmsgate(
   let localErr: unknown;
 
   try {
-    englishState = await client.send({
-      message: alerts.en,
-      phoneNumbers: [phoneE164],
-    });
+    const initial = await client.send(
+      gatewayMessagePayload(alerts.en, [phoneE164]),
+    );
+    englishState = await resolveMessageState(client, initial);
   } catch (e) {
     englishErr = e;
     pushError(errors, "English SMS", e);
   }
 
   try {
-    localState = await client.send({
-      message: alerts.local,
-      phoneNumbers: [phoneE164],
-    });
+    const initial = await client.send(
+      gatewayMessagePayload(alerts.local, [phoneE164]),
+    );
+    localState = await resolveMessageState(client, initial);
   } catch (e) {
     localErr = e;
     pushError(errors, "Local-language SMS", e);
+  }
+
+  if (englishState && messageNeedsPoll(englishState)) {
+    errors.push(
+      "English SMS: gateway still reported Pending after waiting — keep the SMSGate app running, logged into the cloud account, with SMS permission and signal.",
+    );
+  }
+  if (localState && messageNeedsPoll(localState)) {
+    errors.push(
+      "Local-language SMS: gateway still reported Pending after waiting — keep the SMSGate app running, logged into the cloud account, with SMS permission and signal.",
+    );
   }
 
   const english = mapSendOutcome(englishState, englishErr);
@@ -155,6 +237,8 @@ export async function sendBilingualAlertsViaSmsgate(
   if (local === "failed" && localState?.recipients[0]?.error) {
     errors.push(`Local-language SMS: ${localState.recipients[0].error}`);
   }
+
+  appendGenericFailureHints(errors);
 
   const messageIds = [englishState?.id, localState?.id].filter(
     (id): id is string => Boolean(id),
@@ -214,20 +298,36 @@ export async function sendSmsTextViaSmsgate(
   );
 
   try {
-    const state = await client.send({
-      message: text,
-      phoneNumbers: [phoneE164],
-    });
+    const initial = await client.send(gatewayMessagePayload(text, [phoneE164]));
+    const state = await resolveMessageState(client, initial);
+    if (messageNeedsPoll(state)) {
+      return {
+        attempted: true,
+        status: "failed",
+        messageId: state.id,
+        errors: [
+          "Timed out while the gateway message was still Pending. Open the SMSGate app on the phone, confirm it is logged into the cloud account, has SMS permission, and has mobile signal.",
+        ],
+      };
+    }
     const ok = mapSendOutcome(state, undefined) === "sent";
-    const recipientErr = state?.recipients[0]?.error;
+    const recipientErr = state.recipients[0]?.error;
+    const errors: string[] = ok
+      ? []
+      : recipientErr
+        ? [recipientErr]
+        : ["Send failed (no recipient error text returned)."];
+    appendGenericFailureHints(errors);
     return {
       attempted: true,
       status: ok ? "sent" : "failed",
-      messageId: state?.id,
-      errors: ok ? [] : recipientErr ? [recipientErr] : ["Send failed"],
+      messageId: state.id,
+      errors,
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    return { attempted: true, status: "failed", errors: [message] };
+    const errors = [message];
+    appendGenericFailureHints(errors);
+    return { attempted: true, status: "failed", errors };
   }
 }
