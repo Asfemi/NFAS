@@ -1,81 +1,68 @@
-import riskData from "@/data/flood-risk.json";
-import { FloodRiskRecord } from "@/backend/types";
-import { NIGERIAN_LGAS, getLgaByName } from "@/backend/lgas";
+import { loadLgaDataset } from "@/backend/nigeria-geo";
+import { LgaLocation, RegionalLanguageCode } from "@/backend/types";
+import { getLocalLanguageForState } from "@/backend/regions";
 
-const dataset = riskData as FloodRiskRecord[];
-
-export function getAllLgas(): string[] {
-  // Get all LGA names from the comprehensive list
-  return NIGERIAN_LGAS.map((lga) => lga.name).sort((a, b) =>
-    a.localeCompare(b),
-  );
-}
-
-export function getAllLgasWithStates(): {
+export interface LgaDirectoryEntry {
   lga: string;
   state: string;
-  latitude: number;
-  longitude: number;
-}[] {
-  return NIGERIAN_LGAS.map((lga) => ({
-    lga: lga.name,
-    state: lga.state,
-    latitude: lga.latitude,
-    longitude: lga.longitude,
-  })).sort((a, b) => a.lga.localeCompare(b.lga));
+  localLanguage: RegionalLanguageCode;
 }
 
-export function findFloodRiskByLga(lga: string): FloodRiskRecord | null {
+export async function getAllLgas(): Promise<string[]> {
+  const dataset = await loadLgaDataset();
+  const unique = new Set(dataset.map((entry) => entry.lga));
+  return Array.from(unique).sort((a, b) => a.localeCompare(b));
+}
+
+export async function getLgaDirectory(): Promise<LgaDirectoryEntry[]> {
+  const dataset = await loadLgaDataset();
+  return dataset
+    .map((entry) => ({
+      lga: entry.lga,
+      state: entry.state,
+      localLanguage: getLocalLanguageForState(entry.state),
+    }))
+    .sort((a, b) => {
+      const byLga = a.lga.localeCompare(b.lga);
+      if (byLga !== 0) {
+        return byLga;
+      }
+      return a.state.localeCompare(b.state);
+    });
+}
+
+/**
+ * Resolves an LGA name against the Nigeria geo dataset (centroid per LGA from ward points).
+ * Duplicate LGA names across states: deterministic pick by alphabetical state, then first entry.
+ */
+export async function findFloodRiskByLga(lga: string): Promise<LgaLocation | null> {
+  const dataset = await loadLgaDataset();
   const normalized = lga.trim().toLowerCase();
 
   if (!normalized) {
     return null;
   }
 
-  // Try exact match first
-  const exact = dataset.find((entry) => entry.lga.toLowerCase() === normalized);
-  if (exact) {
-    return exact;
+  const sameName = dataset
+    .filter((entry) => entry.lga.toLowerCase() === normalized)
+    .sort((a, b) => a.state.localeCompare(b.state));
+
+  if (sameName.length === 1) {
+    return sameName[0];
+  }
+  if (sameName.length > 1) {
+    return sameName[0];
   }
 
-  // Try partial match
-  const partial = dataset.find((entry) =>
-    entry.lga.toLowerCase().includes(normalized),
-  );
-  if (partial) {
-    return partial;
-  }
+  const partial = dataset
+    .filter((entry) => entry.lga.toLowerCase().includes(normalized))
+    .sort((a, b) => {
+      const byLga = a.lga.localeCompare(b.lga);
+      if (byLga !== 0) {
+        return byLga;
+      }
+      return a.state.localeCompare(b.state);
+    });
 
-  // Try to find in LGA database and return with default risk level
-  const lgaInfo = getLgaByName(normalized);
-  if (lgaInfo) {
-    return {
-      lga: lgaInfo.name,
-      state: lgaInfo.state,
-      risk_level: "low",
-      timeframe: "7 days",
-      latitude: lgaInfo.latitude,
-      longitude: lgaInfo.longitude,
-    };
-  }
-
-  return null;
-}
-
-export function getLgaRiskRecord(lgaName: string): FloodRiskRecord | null {
-  return findFloodRiskByLga(lgaName);
-}
-
-export function getFloodRiskStats(): {
-  totalLGAs: number;
-  highRiskCount: number;
-  mediumRiskCount: number;
-  lowRiskCount: number;
-} {
-  return {
-    totalLGAs: NIGERIAN_LGAS.length,
-    highRiskCount: dataset.filter((d) => d.risk_level === "high").length,
-    mediumRiskCount: dataset.filter((d) => d.risk_level === "medium").length,
-    lowRiskCount: dataset.filter((d) => d.risk_level === "low").length,
-  };
+  return partial[0] ?? null;
 }

@@ -23,7 +23,7 @@ Flood Sentinel Nigeria bridges this gap by:
 - Accepting a user's **Local Government Area (LGA)**
 - Retrieving flood risk data
 - Converting it into **plain-language advice**
-- Translating into **English, Hausa, Yoruba, and Igbo**
+- Returning **English** plus **one regional language** per LGA (South West → Yoruba; South East / South South → Igbo; North / North Central → Hausa)
 - Formatting it into **SMS-ready alerts (≤160 characters)**
 
 ##  MVP Scope
@@ -31,7 +31,7 @@ Flood Sentinel Nigeria bridges this gap by:
 ### Features
 - LGA-based flood risk query
 - AI-generated plain-language alerts
-- Multilingual output (EN, HA, YO, IG)
+- Bilingual SMS output: English + auto-selected regional language for the LGA’s state
 - SMS-ready formatting
 - Lightweight web interface
 

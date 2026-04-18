@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
+/** Keep in sync with `frontend/data/image-attributions.ts` (HOMEPAGE_BACKGROUND_CREDITS). */
 const images = [
   "/flood_images/image1170x530cropped.jpg",
   "/flood_images/49aa56b0-1620-11f0-a367-317c298ca3ca.jpg.webp",
@@ -36,13 +37,10 @@ export function BackgroundSlideshow() {
           priority={index === 0}
           sizes="100vw"
           className={`object-cover transition-opacity duration-2000 ease-in-out ${
-            index === activeIndex ? "opacity-20" : "opacity-0"
+            index === activeIndex ? "opacity-50" : "opacity-0"
           }`}
         />
       ))}
-      {/* Farmer-themed overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-900/15 via-orange-900/10 to-yellow-900/15" />
-      <div className="absolute inset-0 bg-gradient-to-t from-green-50/70 via-transparent to-transparent" />
     </div>
   );
 }
