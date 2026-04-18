@@ -159,7 +159,7 @@ function TeamModal({ open, onClose }: { open: boolean; onClose: () => void }) {
         </button>
       </div>
       <p className="mb-4 text-sm text-zinc-600">
-        Tap a name to open their profile (LinkedIn or other link they provided).
+        Tap a name to open their profile .
       </p>
       <motion.ul
         className="space-y-2"

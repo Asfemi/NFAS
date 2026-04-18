@@ -21,7 +21,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
   },
   {
     name: "Adegunlola Enoch Oluwaseyi",
-    title: "Civil Engineer (GMNSE, MIAEng)",
+    title: "Software Engineer",
     href: "https://www.linkedin.com/in/adegunlola-enoch-oluwaseyi-gmnse-miaeng-02995a235",
   },
 ];
