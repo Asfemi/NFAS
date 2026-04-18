@@ -1,6 +1,7 @@
 import { buildFloodAlertResponse } from "@/backend/alerts";
 import { isFloodForecastUnavailableError } from "@/backend/forecast-error";
 import { isLikelyValidPhone } from "@/backend/phone";
+import { sendBilingualAlertsViaSmsgate } from "@/backend/smsgate";
 import type { PersonalizedAlertInput } from "@/backend/types";
 
 interface AlertRequestBody {
@@ -53,6 +54,14 @@ export async function POST(request: Request) {
         { error: "LGA not found in the current dataset." },
         { status: 404 },
       );
+    }
+
+    if (personalized) {
+      const smsDelivery = await sendBilingualAlertsViaSmsgate(
+        personalized.phone,
+        data.alerts,
+      );
+      return Response.json({ ...data, smsDelivery });
     }
 
     return Response.json(data);

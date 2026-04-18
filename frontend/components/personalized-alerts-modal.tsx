@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useId, useRef, useState } from "react";
+import type { SmsGatewayDeliveryResult } from "@/backend/types";
 
 type RegionalLanguageCode = "ha" | "yo" | "ig";
 
@@ -17,6 +18,7 @@ export interface PersonalizedAlertPayload {
     local: string;
   };
   personalized?: boolean;
+  smsDelivery?: SmsGatewayDeliveryResult;
 }
 
 const regionalLabels: Record<RegionalLanguageCode, string> = {
@@ -24,6 +26,69 @@ const regionalLabels: Record<RegionalLanguageCode, string> = {
   yo: "Yoruba",
   ig: "Igbo",
 };
+
+function SmsDeliveryNotice({ sms }: { sms: SmsGatewayDeliveryResult }) {
+  if (sms.skippedReason === "not_configured") {
+    return (
+      <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        SMS was not sent: set{" "}
+        <code className="rounded bg-amber-100/80 px-1 text-xs">SMSGATE_USERNAME</code> and{" "}
+        <code className="rounded bg-amber-100/80 px-1 text-xs">SMSGATE_PASSWORD</code> on the
+        server (credentials from the{" "}
+        <a
+          href="https://sms-gate.app/"
+          className="underline underline-offset-2"
+          target="_blank"
+          rel="noreferrer"
+        >
+          SMSGate
+        </a>{" "}
+        app). Messages below are ready to copy.
+      </p>
+    );
+  }
+
+  if (sms.skippedReason === "invalid_phone") {
+    return (
+      <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+        SMS was not sent: {sms.errors[0] ?? "Invalid phone for E.164."}
+      </p>
+    );
+  }
+
+  const bothOk = sms.english === "sent" && sms.local === "sent";
+  if (bothOk) {
+    return (
+      <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        Both SMS messages were submitted to SMSGate for{" "}
+        <span className="font-medium">{sms.phoneE164}</span>.
+        {sms.messageIds && sms.messageIds.length > 0 ? (
+          <span className="mt-1 block font-mono text-[11px] text-emerald-800/90">
+            Message IDs: {sms.messageIds.join(", ")}
+          </span>
+        ) : null}
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">
+      <p className="font-medium">SMS delivery incomplete</p>
+      <p className="mt-1 text-amber-900">
+        English: {sms.english === "sent" ? "submitted" : "failed"} · Local:{" "}
+        {sms.local === "sent" ? "submitted" : "failed"}
+        {sms.phoneE164 ? ` · ${sms.phoneE164}` : ""}
+      </p>
+      {sms.errors.length > 0 ? (
+        <ul className="mt-2 list-inside list-disc text-xs text-amber-900">
+          {sms.errors.map((line, index) => (
+            <li key={index}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 interface PersonalizedAlertsModalProps {
   open: boolean;
@@ -133,9 +198,19 @@ export function PersonalizedAlertsModal({
               Get tailored flood alerts
             </h2>
             <p className="mt-1 text-sm text-zinc-600">
-              For <span className="font-medium text-zinc-800">{lga}</span>. Add optional
-              farm or community details so the advisory matches your situation. This MVP
-              does not store your number; it is only used for this request.
+              For <span className="font-medium text-zinc-800">{lga}</span>. Add optional farm or
+              community details so the advisory matches your situation. Your number is used on
+              this request to generate tailored text and, if the server is configured, to send SMS
+              through your{" "}
+              <a
+                href="https://sms-gate.app/"
+                className="text-zinc-800 underline underline-offset-2"
+                target="_blank"
+                rel="noreferrer"
+              >
+                SMSGate
+              </a>{" "}
+              account.
             </p>
           </div>
           <button
@@ -219,6 +294,9 @@ export function PersonalizedAlertsModal({
 
         {result ? (
           <div className="mt-6 space-y-3 border-t border-zinc-200 pt-6">
+            {result.smsDelivery ? (
+              <SmsDeliveryNotice sms={result.smsDelivery} />
+            ) : null}
             <p className="text-sm font-medium text-zinc-800">
               Your tailored messages ({regionalLabels[result.localLanguage]} + English)
             </p>

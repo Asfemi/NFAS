@@ -46,6 +46,17 @@ export interface OpenMeteoFloodForecast {
   riskLevel: RiskLevel;
 }
 
+/** Outcome of sending bilingual SMS via SMSGate (Android SMS Gateway, https://sms-gate.app/). */
+export interface SmsGatewayDeliveryResult {
+  attempted: boolean;
+  skippedReason?: "not_configured" | "invalid_phone";
+  phoneE164?: string;
+  english: "sent" | "failed" | "skipped";
+  local: "sent" | "failed" | "skipped";
+  errors: string[];
+  messageIds?: string[];
+}
+
 export interface FloodAlertResponse {
   record: FloodRiskRecord;
   /** Auto-derived from state: SW → Yoruba, SE/SS → Igbo, North/NC → Hausa. */
@@ -55,6 +66,8 @@ export interface FloodAlertResponse {
   openMeteo: OpenMeteoFloodForecast;
   /** True when phone + optional farm/community context was used to tailor the advisory. */
   personalized?: boolean;
+  /** Present when `personalized` was requested: SMS send via Android SMS Gateway (if configured). */
+  smsDelivery?: SmsGatewayDeliveryResult;
 }
 
 /** Optional SMS signup context (phone is validated but not sent to the model). */
