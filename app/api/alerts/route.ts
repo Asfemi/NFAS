@@ -1,5 +1,6 @@
 import { buildFloodAlertResponse } from "@/backend/alerts";
 import { isFloodForecastUnavailableError } from "@/backend/forecast-error";
+import { isNigeriaGeoDatasetError } from "@/backend/nigeria-geo";
 import { isLikelyValidPhone } from "@/backend/phone";
 import { sendBilingualAlertsViaSmsgate } from "@/backend/smsgate";
 import type { PersonalizedAlertInput } from "@/backend/types";
@@ -68,6 +69,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (isFloodForecastUnavailableError(error)) {
       return Response.json({ error: error.message }, { status: 502 });
+    }
+    if (isNigeriaGeoDatasetError(error)) {
+      return Response.json({ error: error.message }, { status: 503 });
     }
     throw error;
   }

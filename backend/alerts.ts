@@ -17,7 +17,7 @@ export async function buildFloodAlertResponse(
   lga: string,
   personalized?: PersonalizedAlertInput | null,
 ): Promise<FloodAlertResponse | null> {
-  const record = findFloodRiskByLga(lga);
+  const record = await findFloodRiskByLga(lga);
   if (!record) {
     return null;
   }

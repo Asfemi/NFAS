@@ -58,6 +58,7 @@ const regionalLabels: Record<RegionalLanguageCode, string> = {
 export function AlertForm() {
   const [lga, setLga] = useState("");
   const [directory, setDirectory] = useState<LgaDirectoryEntry[]>([]);
+  const [directoryError, setDirectoryError] = useState<string | null>(null);
   const [result, setResult] = useState<AlertResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,19 +72,27 @@ export function AlertForm() {
       const payload = (await response.json()) as {
         items?: LgaDirectoryEntry[];
         lgas?: string[];
+        error?: string;
       };
+      if (!response.ok) {
+        setDirectory([]);
+        setDirectoryError(payload.error ?? "Could not load the LGA list.");
+        return;
+      }
+      setDirectoryError(null);
       setDirectory(payload.items ?? []);
     }
 
     loadLgas().catch(() => {
       setDirectory([]);
+      setDirectoryError("Could not load the LGA list.");
     });
   }, []);
 
-  const knownLgas = useMemo(
-    () => directory.map((entry) => entry.lga).sort((a, b) => a.localeCompare(b)),
-    [directory],
-  );
+  const knownLgas = useMemo(() => {
+    const names = directory.map((entry) => entry.lga);
+    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+  }, [directory]);
 
   const autoLanguage = useMemo(() => {
     const trimmed = lga.trim().toLowerCase();
@@ -158,6 +167,9 @@ export function AlertForm() {
         <label htmlFor="lga" className="block text-sm font-semibold text-zinc-800">
           Local Government Area (LGA)
         </label>
+        {directoryError ? (
+          <p className="text-sm text-amber-800">{directoryError}</p>
+        ) : null}
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             id="lga"

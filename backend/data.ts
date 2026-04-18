@@ -1,8 +1,6 @@
-import riskData from "@/data/flood-risk.json";
+import { loadLgaDataset } from "@/backend/nigeria-geo";
 import { LgaLocation, RegionalLanguageCode } from "@/backend/types";
 import { getLocalLanguageForState } from "@/backend/regions";
-
-const dataset = riskData as LgaLocation[];
 
 export interface LgaDirectoryEntry {
   lga: string;
@@ -10,35 +8,61 @@ export interface LgaDirectoryEntry {
   localLanguage: RegionalLanguageCode;
 }
 
-export function getAllLgas(): string[] {
-  return dataset.map((entry) => entry.lga).sort((a, b) => a.localeCompare(b));
+export async function getAllLgas(): Promise<string[]> {
+  const dataset = await loadLgaDataset();
+  const unique = new Set(dataset.map((entry) => entry.lga));
+  return Array.from(unique).sort((a, b) => a.localeCompare(b));
 }
 
-export function getLgaDirectory(): LgaDirectoryEntry[] {
+export async function getLgaDirectory(): Promise<LgaDirectoryEntry[]> {
+  const dataset = await loadLgaDataset();
   return dataset
     .map((entry) => ({
       lga: entry.lga,
       state: entry.state,
       localLanguage: getLocalLanguageForState(entry.state),
     }))
-    .sort((a, b) => a.lga.localeCompare(b.lga));
+    .sort((a, b) => {
+      const byLga = a.lga.localeCompare(b.lga);
+      if (byLga !== 0) {
+        return byLga;
+      }
+      return a.state.localeCompare(b.state);
+    });
 }
 
-export function findFloodRiskByLga(lga: string): LgaLocation | null {
+/**
+ * Resolves an LGA name against the Nigeria geo dataset (centroid per LGA from ward points).
+ * Duplicate LGA names across states: deterministic pick by alphabetical state, then first entry.
+ */
+export async function findFloodRiskByLga(lga: string): Promise<LgaLocation | null> {
+  const dataset = await loadLgaDataset();
   const normalized = lga.trim().toLowerCase();
 
   if (!normalized) {
     return null;
   }
 
-  const exact = dataset.find((entry) => entry.lga.toLowerCase() === normalized);
-  if (exact) {
-    return exact;
+  const sameName = dataset
+    .filter((entry) => entry.lga.toLowerCase() === normalized)
+    .sort((a, b) => a.state.localeCompare(b.state));
+
+  if (sameName.length === 1) {
+    return sameName[0];
+  }
+  if (sameName.length > 1) {
+    return sameName[0];
   }
 
-  const partial = dataset.find((entry) =>
-    entry.lga.toLowerCase().includes(normalized),
-  );
+  const partial = dataset
+    .filter((entry) => entry.lga.toLowerCase().includes(normalized))
+    .sort((a, b) => {
+      const byLga = a.lga.localeCompare(b.lga);
+      if (byLga !== 0) {
+        return byLga;
+      }
+      return a.state.localeCompare(b.state);
+    });
 
-  return partial ?? null;
+  return partial[0] ?? null;
 }
