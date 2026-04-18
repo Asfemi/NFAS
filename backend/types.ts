@@ -85,3 +85,18 @@ export interface PersonalizedAlertInput {
   farmInfo?: string;
   extraInfo?: string;
 }
+
+export interface SMSSubscription {
+  phoneNumber: string;
+  lga: string;
+  state: string;
+  preferredLanguage: LanguageCode;
+  createdAt: string;
+  active: boolean;
+}
+
+export interface SMSAlertRequest {
+  phoneNumber: string;
+  lga: string;
+  preferredLanguage?: LanguageCode;
+}

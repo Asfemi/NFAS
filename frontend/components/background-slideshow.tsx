@@ -13,7 +13,7 @@ const images = [
   "/flood_images/Flooded-Ala-Obaje-Community-Igalamela-LGA-Kogi-State.-Photo-The-ICIR..jpg",
 ];
 
-const SWITCH_INTERVAL_MS = 8000;
+const SWITCH_INTERVAL_MS = 6000;
 
 export function BackgroundSlideshow() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -36,12 +36,14 @@ export function BackgroundSlideshow() {
           fill
           priority={index === 0}
           sizes="100vw"
-          className={`object-cover transition-opacity duration-2200 ease-in-out ${
-            index === activeIndex ? "opacity-100" : "opacity-0"
+          className={`object-cover transition-opacity duration-2000 ease-in-out ${
+            index === activeIndex ? "opacity-20" : "opacity-0"
           }`}
         />
       ))}
-      <div className="absolute inset-0 bg-black/55" />
+      {/* Farmer-themed overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-green-900/15 via-orange-900/10 to-yellow-900/15" />
+      <div className="absolute inset-0 bg-gradient-to-t from-green-50/70 via-transparent to-transparent" />
     </div>
   );
 }
