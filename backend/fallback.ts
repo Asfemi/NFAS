@@ -26,11 +26,13 @@ const localBodies: Record<
 export function buildFallbackAlerts(
   record: FloodRiskRecord,
   localLanguage: RegionalLanguageCode,
+  englishExtra?: string,
 ): BilingualAlerts {
   const action = riskActionMap[record.risk_level];
-  const en = toSmsLength(
-    `${record.lga}, ${record.state}: ${record.risk_level.toUpperCase()} flood risk in ${record.timeframe}. ${action}`,
-  );
+  const baseEn = `${record.lga}, ${record.state}: ${record.risk_level.toUpperCase()} flood risk in ${record.timeframe}. ${action}`;
+  const en = englishExtra
+    ? toSmsLength(`${baseEn} (${englishExtra})`)
+    : toSmsLength(baseEn);
   const localText = localBodies[localLanguage](record);
   return {
     en,

@@ -97,6 +97,11 @@ export function AlertForm() {
     return partial?.localLanguage ?? null;
   }, [lga, directory]);
 
+  const languageForHint = useMemo(
+    () => autoLanguage ?? result?.localLanguage ?? null,
+    [autoLanguage, result],
+  );
+
   const placeholder = useMemo(
     () =>
       knownLgas.length ? `Try: ${knownLgas.slice(0, 3).join(", ")}` : "e.g. Lokoja",
@@ -169,14 +174,64 @@ export function AlertForm() {
             {loading ? "Generating..." : "Get Alert"}
           </button>
         </div>
-        {autoLanguage ? (
-          <p className="text-sm text-zinc-600">
-            Local SMS language for this area:{" "}
-            <span className="font-semibold text-zinc-800">
-              {regionalLabels[autoLanguage]}
-            </span>{" "}
-            (with English).
-          </p>
+        {languageForHint ? (
+          <div className="text-sm leading-relaxed text-zinc-600">
+            <span>
+              Local SMS language for this area:{" "}
+              <span className="font-semibold text-zinc-800">
+                {regionalLabels[languageForHint]}
+              </span>{" "}
+              (with English).
+            </span>
+            {result ? (
+              <>
+                {" "}
+                <details
+                  key={`forecast-details-${result.record.lga}-${result.record.state}`}
+                  className="inline align-baseline [&_summary::-webkit-details-marker]:hidden"
+                >
+                  <summary className="inline list-none cursor-pointer bg-transparent p-0 text-sm font-normal leading-relaxed text-zinc-600 shadow-none ring-0 hover:text-zinc-800 hover:underline hover:underline-offset-4 focus:outline-none focus-visible:text-zinc-800 focus-visible:underline">
+                    forecast details
+                  </summary>
+                  <div className="mt-3 block w-full min-w-0 space-y-3 border-t border-zinc-200/90 pt-3 text-zinc-600">
+                    <p>
+                      River discharge is for the Open-Meteo model grid near (
+                      {result.openMeteo.gridLatitude.toFixed(3)}°,{" "}
+                      {result.openMeteo.gridLongitude.toFixed(3)}°) — requested LGA point (
+                      {result.openMeteo.requestedLatitude.toFixed(3)}°,{" "}
+                      {result.openMeteo.requestedLongitude.toFixed(3)}°).
+                    </p>
+                    <p>
+                      Peak ensemble-max discharge:{" "}
+                      <span className="font-medium text-zinc-800">
+                        {result.openMeteo.peakDischargeM3s.toFixed(0)}{" "}
+                        {result.openMeteo.dischargeUnit}
+                      </span>{" "}
+                      on {result.openMeteo.peakDate}.
+                    </p>
+                    <div>
+                      <h3 className="mb-2 font-semibold text-zinc-800">
+                        Daily river discharge max ({result.openMeteo.forecastDays} days)
+                      </h3>
+                      <ul className="grid gap-1 sm:grid-cols-2">
+                        {result.openMeteo.days.map((d) => (
+                          <li
+                            key={d.date}
+                            className="flex justify-between gap-2 rounded-lg bg-zinc-50/80 px-2 py-1 text-zinc-600"
+                          >
+                            <span>{d.date}</span>
+                            <span className="font-mono text-zinc-800">
+                              {d.riverDischargeMaxM3s.toFixed(0)} {result.openMeteo.dischargeUnit}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </details>
+              </>
+            ) : null}
+          </div>
         ) : null}
       </form>
 
@@ -186,56 +241,6 @@ export function AlertForm() {
 
       {result ? (
         <div className="mt-6 space-y-4">
-          <div className="rounded-xl bg-zinc-100 p-3 text-sm text-zinc-700">
-            <span className="font-semibold">Risk (live GloFAS):</span>{" "}
-            {result.record.risk_level.toUpperCase()} in {result.record.lga}, {result.record.state} (
-            {result.record.timeframe})
-            <span className="mt-1 block text-zinc-600">
-              Alerts: English + {regionalLabels[result.localLanguage]} only.
-            </span>
-            <details
-              key={`forecast-details-${result.record.lga}-${result.record.state}`}
-              className="mt-2 [&_summary::-webkit-details-marker]:hidden"
-            >
-              <summary className="inline list-none cursor-pointer bg-transparent p-0 text-sm font-normal leading-normal text-zinc-600 shadow-none ring-0 hover:text-zinc-800 hover:underline hover:underline-offset-4 focus:outline-none focus-visible:text-zinc-800 focus-visible:underline">
-                Forecast details
-              </summary>
-              <div className="mt-3 space-y-3 border-t border-zinc-200/90 pt-3 text-zinc-600">
-                <p>
-                  River discharge is for the Open-Meteo model grid near (
-                  {result.openMeteo.gridLatitude.toFixed(3)}°,{" "}
-                  {result.openMeteo.gridLongitude.toFixed(3)}°) — requested LGA point (
-                  {result.openMeteo.requestedLatitude.toFixed(3)}°,{" "}
-                  {result.openMeteo.requestedLongitude.toFixed(3)}°).
-                </p>
-                <p>
-                  Peak ensemble-max discharge:{" "}
-                  <span className="font-medium text-zinc-800">
-                    {result.openMeteo.peakDischargeM3s.toFixed(0)} {result.openMeteo.dischargeUnit}
-                  </span>{" "}
-                  on {result.openMeteo.peakDate}.
-                </p>
-                <div>
-                  <h3 className="mb-2 font-semibold text-zinc-800">
-                    Daily river discharge max ({result.openMeteo.forecastDays} days)
-                  </h3>
-                  <ul className="grid gap-1 sm:grid-cols-2">
-                    {result.openMeteo.days.map((d) => (
-                      <li
-                        key={d.date}
-                        className="flex justify-between gap-2 rounded-lg bg-zinc-50/80 px-2 py-1 text-zinc-600"
-                      >
-                        <span>{d.date}</span>
-                        <span className="font-mono text-zinc-800">
-                          {d.riverDischargeMaxM3s.toFixed(0)} {result.openMeteo.dischargeUnit}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </details>
-          </div>
           <article className="rounded-xl border border-zinc-200 p-4">
             <div className="mb-2 flex items-center justify-between text-sm">
               <h3 className="font-semibold text-zinc-800">English</h3>

@@ -1,8 +1,8 @@
 import riskData from "@/data/flood-risk.json";
-import { FloodRiskRecord, RegionalLanguageCode } from "@/backend/types";
+import { LgaLocation, RegionalLanguageCode } from "@/backend/types";
 import { getLocalLanguageForState } from "@/backend/regions";
 
-const dataset = riskData as FloodRiskRecord[];
+const dataset = riskData as LgaLocation[];
 
 export interface LgaDirectoryEntry {
   lga: string;
@@ -24,7 +24,7 @@ export function getLgaDirectory(): LgaDirectoryEntry[] {
     .sort((a, b) => a.lga.localeCompare(b.lga));
 }
 
-export function findFloodRiskByLga(lga: string): FloodRiskRecord | null {
+export function findFloodRiskByLga(lga: string): LgaLocation | null {
   const normalized = lga.trim().toLowerCase();
 
   if (!normalized) {
