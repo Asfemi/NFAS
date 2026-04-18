@@ -169,3 +169,65 @@ export async function sendBilingualAlertsViaSmsgate(
     ...(messageIds.length ? { messageIds } : {}),
   };
 }
+
+export interface SingleSmsGatewaySendResult {
+  attempted: boolean;
+  skippedReason?: "not_configured" | "invalid_phone";
+  status: "sent" | "failed" | "skipped";
+  messageId?: string;
+  errors: string[];
+}
+
+/** One SMS body via SMSGate (same credentials as {@link sendBilingualAlertsViaSmsgate}). */
+export async function sendSmsTextViaSmsgate(
+  phoneRaw: string,
+  text: string,
+): Promise<SingleSmsGatewaySendResult> {
+  const username =
+    process.env.SMSGATE_USERNAME?.trim() || process.env.ASG_USERNAME?.trim();
+  const password =
+    process.env.SMSGATE_PASSWORD?.trim() || process.env.ASG_PASSWORD?.trim();
+
+  const phoneE164 = normalizePhoneToE164(phoneRaw);
+  if (!phoneE164) {
+    return {
+      attempted: false,
+      skippedReason: "invalid_phone",
+      status: "skipped",
+      errors: ["Could not normalize phone number for SMS."],
+    };
+  }
+
+  if (!username || !password) {
+    return {
+      attempted: false,
+      skippedReason: "not_configured",
+      status: "skipped",
+      errors: [],
+    };
+  }
+
+  const client = new SmsGatewayClient(
+    username,
+    password,
+    createFetchHttpClient(),
+  );
+
+  try {
+    const state = await client.send({
+      message: text,
+      phoneNumbers: [phoneE164],
+    });
+    const ok = mapSendOutcome(state, undefined) === "sent";
+    const recipientErr = state?.recipients[0]?.error;
+    return {
+      attempted: true,
+      status: ok ? "sent" : "failed",
+      messageId: state?.id,
+      errors: ok ? [] : recipientErr ? [recipientErr] : ["Send failed"],
+    };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { attempted: true, status: "failed", errors: [message] };
+  }
+}
