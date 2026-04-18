@@ -37,10 +37,12 @@ export function BackgroundSlideshow() {
           priority={index === 0}
           sizes="100vw"
           className={`object-cover transition-opacity duration-2000 ease-in-out ${
-            index === activeIndex ? "opacity-50" : "opacity-0"
+            index === activeIndex ? "opacity-100" : "opacity-0"
           }`}
         />
       ))}
+      {/* Black 50% scrim so light hero/footer text stays readable over photos */}
+      <div className="absolute inset-0 z-1 bg-black/50" aria-hidden />
     </div>
   );
 }
