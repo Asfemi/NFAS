@@ -1,4 +1,5 @@
-import { getLgaRiskRecord } from "@/backend/data";
+import { findFloodRiskByLga } from "@/backend/data";
+import { isNigeriaGeoDatasetError } from "@/backend/nigeria-geo";
 import { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -16,21 +17,28 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const riskRecord = getLgaRiskRecord(lgaParam);
+  try {
+    const location = await findFloodRiskByLga(lgaParam);
 
-  if (!riskRecord) {
-    return Response.json(
-      {
-        error: "LGA not found",
-        lga: lgaParam,
-        message: `No flood risk data found for LGA: ${lgaParam}`,
-      },
-      { status: 404 },
-    );
+    if (!location) {
+      return Response.json(
+        {
+          error: "LGA not found",
+          lga: lgaParam,
+          message: `No LGA catalogue entry found for: ${lgaParam}`,
+        },
+        { status: 404 },
+      );
+    }
+
+    return Response.json({
+      success: true,
+      data: location,
+    });
+  } catch (error) {
+    if (isNigeriaGeoDatasetError(error)) {
+      return Response.json({ error: error.message }, { status: 503 });
+    }
+    throw error;
   }
-
-  return Response.json({
-    data: riskRecord,
-    success: true,
-  });
 }
