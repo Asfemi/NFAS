@@ -3,6 +3,7 @@ import { findFloodRiskByLga } from "@/backend/data";
 import { generateGeminiAlerts } from "@/backend/gemini";
 import { FloodAlertResponse } from "@/backend/types";
 import { getOpenMeteoRisk } from "@/backend/open-meteo";
+import { getLocalLanguageForState } from "@/backend/regions";
 
 export async function buildFloodAlertResponse(
   lga: string,
@@ -11,6 +12,8 @@ export async function buildFloodAlertResponse(
   if (!record) {
     return null;
   }
+
+  const localLanguage = getLocalLanguageForState(record.state);
 
   const liveRisk = await getOpenMeteoRisk(record).catch(() => null);
   const effectiveRecord = liveRisk
@@ -21,11 +24,16 @@ export async function buildFloodAlertResponse(
       }
     : record;
 
-  const aiAlerts = await generateGeminiAlerts(effectiveRecord).catch(() => null);
-  const alerts = aiAlerts ?? buildFallbackAlerts(effectiveRecord);
+  const aiAlerts = await generateGeminiAlerts(
+    effectiveRecord,
+    localLanguage,
+  ).catch(() => null);
+  const alerts =
+    aiAlerts ?? buildFallbackAlerts(effectiveRecord, localLanguage);
 
   return {
     record: effectiveRecord,
+    localLanguage,
     alerts,
   };
 }

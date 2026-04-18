@@ -1,5 +1,8 @@
-import { getAllLgas } from "@/backend/data";
+import { getAllLgas, getLgaDirectory } from "@/backend/data";
 
 export async function GET() {
-  return Response.json({ lgas: getAllLgas() });
+  return Response.json({
+    lgas: getAllLgas(),
+    items: getLgaDirectory(),
+  });
 }

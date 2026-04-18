@@ -6,8 +6,8 @@
 - Flood risk response (`low`, `medium`, `high`) with timeframe
 - Plain-language advisories generated through Gemini when configured
 - Fallback advisory generation when Gemini key is not set
-- Multilingual output in English, Hausa, Yoruba, and Igbo
-- SMS-ready output constrained to 160 characters per language
+- Bilingual output: English plus one regional language chosen from the LGA’s state (South West → Yoruba; South East / South South → Igbo; North / North Central → Hausa)
+- SMS-ready output constrained to 160 characters per message
 
 ## Excluded (Phase 2)
 

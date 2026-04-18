@@ -11,14 +11,18 @@ export interface FloodRiskRecord {
 
 export type LanguageCode = "en" | "ha" | "yo" | "ig";
 
-export interface AlertBundle {
+/** Regional SMS language for the LGA (not English). */
+export type RegionalLanguageCode = "ha" | "yo" | "ig";
+
+/** Only English plus the dominant language for the LGA’s state/region. */
+export interface BilingualAlerts {
   en: string;
-  ha: string;
-  yo: string;
-  ig: string;
+  local: string;
 }
 
 export interface FloodAlertResponse {
   record: FloodRiskRecord;
-  alerts: AlertBundle;
+  /** Auto-derived from state: SW → Yoruba, SE/SS → Igbo, North/NC → Hausa. */
+  localLanguage: RegionalLanguageCode;
+  alerts: BilingualAlerts;
 }

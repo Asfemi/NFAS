@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const data = await buildFloodAlertResponse(lga);
   if (!data) {
     return Response.json(
-      { error: "LGA not found in the MVP dataset." },
+      { error: "LGA not found in the current dataset." },
       { status: 404 },
     );
   }

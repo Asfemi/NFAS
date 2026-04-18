@@ -2,7 +2,13 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-type LanguageCode = "en" | "ha" | "yo" | "ig";
+type RegionalLanguageCode = "ha" | "yo" | "ig";
+
+interface LgaDirectoryEntry {
+  lga: string;
+  state: string;
+  localLanguage: RegionalLanguageCode;
+}
 
 interface AlertResponse {
   record: {
@@ -11,11 +17,14 @@ interface AlertResponse {
     risk_level: "low" | "medium" | "high";
     timeframe: string;
   };
-  alerts: Record<LanguageCode, string>;
+  localLanguage: RegionalLanguageCode;
+  alerts: {
+    en: string;
+    local: string;
+  };
 }
 
-const languageLabels: Record<LanguageCode, string> = {
-  en: "English",
+const regionalLabels: Record<RegionalLanguageCode, string> = {
   ha: "Hausa",
   yo: "Yoruba",
   ig: "Igbo",
@@ -23,7 +32,7 @@ const languageLabels: Record<LanguageCode, string> = {
 
 export function AlertForm() {
   const [lga, setLga] = useState("");
-  const [knownLgas, setKnownLgas] = useState<string[]>([]);
+  const [directory, setDirectory] = useState<LgaDirectoryEntry[]>([]);
   const [result, setResult] = useState<AlertResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,17 +40,43 @@ export function AlertForm() {
   useEffect(() => {
     async function loadLgas() {
       const response = await fetch("/api/lgas");
-      const payload = (await response.json()) as { lgas?: string[] };
-      setKnownLgas(payload.lgas ?? []);
+      const payload = (await response.json()) as {
+        items?: LgaDirectoryEntry[];
+        lgas?: string[];
+      };
+      setDirectory(payload.items ?? []);
     }
 
     loadLgas().catch(() => {
-      setKnownLgas([]);
+      setDirectory([]);
     });
   }, []);
 
+  const knownLgas = useMemo(
+    () => directory.map((entry) => entry.lga).sort((a, b) => a.localeCompare(b)),
+    [directory],
+  );
+
+  const autoLanguage = useMemo(() => {
+    const trimmed = lga.trim().toLowerCase();
+    if (!trimmed) {
+      return null;
+    }
+    const exact = directory.find((entry) => entry.lga.toLowerCase() === trimmed);
+    if (exact) {
+      return exact.localLanguage;
+    }
+    const partial = directory.find(
+      (entry) =>
+        entry.lga.toLowerCase().includes(trimmed) ||
+        trimmed.includes(entry.lga.toLowerCase()),
+    );
+    return partial?.localLanguage ?? null;
+  }, [lga, directory]);
+
   const placeholder = useMemo(
-    () => (knownLgas.length ? `Try: ${knownLgas.slice(0, 3).join(", ")}` : "e.g. Lokoja"),
+    () =>
+      knownLgas.length ? `Try: ${knownLgas.slice(0, 3).join(", ")}` : "e.g. Lokoja",
     [knownLgas],
   );
 
@@ -110,6 +145,15 @@ export function AlertForm() {
             {loading ? "Generating..." : "Get Alert"}
           </button>
         </div>
+        {autoLanguage ? (
+          <p className="text-sm text-zinc-600">
+            Local SMS language for this area:{" "}
+            <span className="font-semibold text-zinc-800">
+              {regionalLabels[autoLanguage]}
+            </span>{" "}
+            (with English).
+          </p>
+        ) : null}
       </form>
 
       {error ? (
@@ -121,19 +165,26 @@ export function AlertForm() {
           <div className="rounded-xl bg-zinc-100 p-3 text-sm text-zinc-700">
             <span className="font-semibold">Risk:</span> {result.record.risk_level.toUpperCase()} in{" "}
             {result.record.lga}, {result.record.state} ({result.record.timeframe})
+            <span className="mt-1 block text-zinc-600">
+              Alerts: English + {regionalLabels[result.localLanguage]} only.
+            </span>
           </div>
-          {(["en", "ha", "yo", "ig"] as LanguageCode[]).map((code) => {
-            const message = result.alerts[code];
-            return (
-              <article key={code} className="rounded-xl border border-zinc-200 p-4">
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <h3 className="font-semibold text-zinc-800">{languageLabels[code]}</h3>
-                  <span className="text-zinc-500">{message.length}/160</span>
-                </div>
-                <p className="text-zinc-700">{message}</p>
-              </article>
-            );
-          })}
+          <article className="rounded-xl border border-zinc-200 p-4">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <h3 className="font-semibold text-zinc-800">English</h3>
+              <span className="text-zinc-500">{result.alerts.en.length}/160</span>
+            </div>
+            <p className="text-zinc-700">{result.alerts.en}</p>
+          </article>
+          <article className="rounded-xl border border-zinc-200 p-4">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <h3 className="font-semibold text-zinc-800">
+                {regionalLabels[result.localLanguage]}
+              </h3>
+              <span className="text-zinc-500">{result.alerts.local.length}/160</span>
+            </div>
+            <p className="text-zinc-700">{result.alerts.local}</p>
+          </article>
         </div>
       ) : null}
     </div>

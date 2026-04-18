@@ -1,4 +1,8 @@
-import { AlertBundle, FloodRiskRecord } from "@/backend/types";
+import {
+  BilingualAlerts,
+  FloodRiskRecord,
+  RegionalLanguageCode,
+} from "@/backend/types";
 import { toSmsLength } from "@/backend/sms";
 
 const riskActionMap = {
@@ -7,21 +11,29 @@ const riskActionMap = {
   low: "Stay alert and keep following official updates this week.",
 } as const;
 
-export function buildFallbackAlerts(record: FloodRiskRecord): AlertBundle {
-  const action = riskActionMap[record.risk_level];
+const localBodies: Record<
+  RegionalLanguageCode,
+  (record: FloodRiskRecord) => string
+> = {
+  ha: (record) =>
+    `${record.lga}, ${record.state}: Hadarin ambaliya ${record.risk_level} cikin ${record.timeframe}. A tsaftace magudana kuma a bi sanarwa.`,
+  yo: (record) =>
+    `${record.lga}, ${record.state}: Ewu ikun omi ${record.risk_level} ninu ${record.timeframe}. Ko ohun pataki soke, tele iroyin.`,
+  ig: (record) =>
+    `${record.lga}, ${record.state}: Ihe ize ndu mmiri ${record.risk_level} n'ime ${record.timeframe}. Debe ihe bara uru n'ebe di elu, soro ozi.`,
+};
 
+export function buildFallbackAlerts(
+  record: FloodRiskRecord,
+  localLanguage: RegionalLanguageCode,
+): BilingualAlerts {
+  const action = riskActionMap[record.risk_level];
+  const en = toSmsLength(
+    `${record.lga}, ${record.state}: ${record.risk_level.toUpperCase()} flood risk in ${record.timeframe}. ${action}`,
+  );
+  const localText = localBodies[localLanguage](record);
   return {
-    en: toSmsLength(
-      `${record.lga}, ${record.state}: ${record.risk_level.toUpperCase()} flood risk in ${record.timeframe}. ${action}`,
-    ),
-    ha: toSmsLength(
-      `${record.lga}, ${record.state}: Hadarin ambaliya ${record.risk_level} cikin ${record.timeframe}. A tsaftace magudana kuma a bi sanarwa.`,
-    ),
-    yo: toSmsLength(
-      `${record.lga}, ${record.state}: Ewu ikun omi ${record.risk_level} ninu ${record.timeframe}. Ko ohun pataki soke, tele iroyin.`,
-    ),
-    ig: toSmsLength(
-      `${record.lga}, ${record.state}: Ihe ize ndu mmiri ${record.risk_level} n'ime ${record.timeframe}. Debe ihe bara uru n'ebe di elu, soro ozi.`,
-    ),
+    en,
+    local: toSmsLength(localText),
   };
 }

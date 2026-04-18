@@ -1,4 +1,8 @@
-import { AlertBundle, FloodRiskRecord } from "@/backend/types";
+import {
+  BilingualAlerts,
+  FloodRiskRecord,
+  RegionalLanguageCode,
+} from "@/backend/types";
 import { toSmsLength } from "@/backend/sms";
 
 interface GeminiResponse {
@@ -9,7 +13,17 @@ interface GeminiResponse {
   }>;
 }
 
-function buildPrompt(record: FloodRiskRecord): string {
+function buildPrompt(
+  record: FloodRiskRecord,
+  localLanguage: RegionalLanguageCode,
+): string {
+  const localName =
+    localLanguage === "ha"
+      ? "Hausa"
+      : localLanguage === "yo"
+        ? "Yoruba"
+        : "Igbo";
+
   return [
     "You generate flood advisory alerts for Nigeria.",
     "Input:",
@@ -17,17 +31,22 @@ function buildPrompt(record: FloodRiskRecord): string {
     `State: ${record.state}`,
     `Risk level: ${record.risk_level}`,
     `Timeframe: ${record.timeframe}`,
+    `Primary local language for this area: ${localName} (code: ${localLanguage})`,
     "",
-    "Output a JSON object with keys exactly: en, ha, yo, ig.",
+    `Output a JSON object with keys exactly: "en" and "${localLanguage}".`,
+    `The "${localLanguage}" value must be the same advisory in ${localName}.`,
     "Rules:",
     "1) Each value must be a single SMS-ready message, max 160 chars.",
     "2) Clear action words, no hashtags, no markdown.",
     "3) Keep local names as given.",
-    "4) Use plain language in each target language.",
+    "4) Use plain language appropriate for community SMS.",
   ].join("\n");
 }
 
-function parseJsonFromModel(raw: string): AlertBundle | null {
+function parseJsonFromModel(
+  raw: string,
+  localLanguage: RegionalLanguageCode,
+): BilingualAlerts | null {
   const trimmed = raw.trim();
   const candidate = trimmed
     .replace(/^```json\s*/i, "")
@@ -35,16 +54,16 @@ function parseJsonFromModel(raw: string): AlertBundle | null {
     .replace(/\s*```$/, "");
 
   try {
-    const parsed = JSON.parse(candidate) as Partial<AlertBundle>;
-    if (!parsed.en || !parsed.ha || !parsed.yo || !parsed.ig) {
+    const parsed = JSON.parse(candidate) as Record<string, string | undefined>;
+    const en = parsed.en;
+    const local = parsed[localLanguage];
+    if (!en || !local) {
       return null;
     }
 
     return {
-      en: toSmsLength(parsed.en),
-      ha: toSmsLength(parsed.ha),
-      yo: toSmsLength(parsed.yo),
-      ig: toSmsLength(parsed.ig),
+      en: toSmsLength(en),
+      local: toSmsLength(local),
     };
   } catch {
     return null;
@@ -53,7 +72,8 @@ function parseJsonFromModel(raw: string): AlertBundle | null {
 
 export async function generateGeminiAlerts(
   record: FloodRiskRecord,
-): Promise<AlertBundle | null> {
+  localLanguage: RegionalLanguageCode,
+): Promise<BilingualAlerts | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return null;
@@ -66,7 +86,7 @@ export async function generateGeminiAlerts(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: buildPrompt(record) }] }],
+      contents: [{ parts: [{ text: buildPrompt(record, localLanguage) }] }],
       generationConfig: {
         temperature: 0.3,
         responseMimeType: "application/json",
@@ -84,5 +104,5 @@ export async function generateGeminiAlerts(
     return null;
   }
 
-  return parseJsonFromModel(text);
+  return parseJsonFromModel(text, localLanguage);
 }
