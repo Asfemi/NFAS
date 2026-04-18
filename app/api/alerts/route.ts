@@ -1,5 +1,6 @@
 import { buildFloodAlertResponse } from "@/backend/alerts";
 import { isFloodForecastUnavailableError } from "@/backend/forecast-error";
+import { isGeminiAdvisoryError } from "@/backend/gemini-error";
 import { isNigeriaGeoDatasetError } from "@/backend/nigeria-geo";
 import { isLikelyValidPhone } from "@/backend/phone";
 import { sendBilingualAlertsViaSmsgate } from "@/backend/smsgate";
@@ -67,6 +68,9 @@ export async function POST(request: Request) {
 
     return Response.json(data);
   } catch (error) {
+    if (isGeminiAdvisoryError(error)) {
+      return Response.json({ error: error.message }, { status: error.httpStatus });
+    }
     if (isFloodForecastUnavailableError(error)) {
       return Response.json({ error: error.message }, { status: 502 });
     }

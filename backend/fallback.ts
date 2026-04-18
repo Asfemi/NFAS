@@ -56,8 +56,15 @@ export function buildFallbackOutlook(
   record: FloodRiskRecord,
   localLanguage: RegionalLanguageCode,
   englishExtra?: string,
+  /** Live Open‑Meteo line so fallback English copy differs materially by LGA/grid cell. */
+  hydrologySummary?: string,
+  /** Short Latin suffix so local-language fallback also carries peak numbers for this LGA. */
+  localMeteoSuffix?: string,
 ): BilingualAlerts {
   const enCore = [
+    ...(hydrologySummary?.trim()
+      ? [`${hydrologySummary.trim()}`]
+      : []),
     `Over roughly the next three months, ${record.lga} (${record.state}) usually moves through Nigeria’s main rainy-season window, when many river and flash-flood risks rise even if individual weeks look calm.`,
     `Today’s model snapshot labels river stress as ${record.risk_level.toUpperCase()} for ${record.timeframe} — use that as a near-term hint, not a day-by-day schedule for the whole season.`,
     "If your area is flood-prone, expect more standing water on roads and farms after sustained rain, slower drainage, and occasional river-margin rises.",
@@ -68,8 +75,13 @@ export function buildFallbackOutlook(
     englishExtra ? `${enCore} Context: ${englishExtra}` : enCore,
   );
   const localText = outlookLocalBodies[localLanguage](record);
+  const local = clampOutlook(
+    localMeteoSuffix?.trim()
+      ? `${localText} ${localMeteoSuffix.trim()}`
+      : localText,
+  );
   return {
     en,
-    local: clampOutlook(localText),
+    local,
   };
 }
