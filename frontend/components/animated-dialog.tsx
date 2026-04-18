@@ -35,7 +35,7 @@ export function AnimatedDialog({
       {open ? (
         <motion.div
           key="animated-dialog-root"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 pt-8 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:items-center sm:p-4 sm:pt-4 sm:pb-4"
           role="presentation"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -47,7 +47,7 @@ export function AnimatedDialog({
             role="dialog"
             aria-modal="true"
             aria-labelledby={labelledBy}
-            className={`max-h-[90vh] w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-900 shadow-xl ${maxWidthClassName}`}
+            className={`max-h-[min(92dvh,calc(100dvh-1.25rem))] w-full min-w-0 overflow-y-auto overscroll-contain rounded-t-2xl border border-zinc-200 bg-white p-4 text-zinc-900 shadow-xl sm:max-h-[90vh] sm:rounded-2xl sm:p-6 ${maxWidthClassName}`}
             initial={
               reduce
                 ? { opacity: 0 }

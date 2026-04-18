@@ -195,11 +195,11 @@ export function PersonalizedAlertsModal({
   return (
     <AnimatedDialog open={open} onClose={onClose} labelledBy={titleId} maxWidthClassName="max-w-lg">
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 id={titleId} className="text-lg font-semibold text-zinc-900">
+        <div className="min-w-0 flex-1 pr-1">
+          <h2 id={titleId} className="text-base font-semibold text-zinc-900 sm:text-lg">
             Get tailored flood alerts
           </h2>
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="mt-1 text-pretty text-sm leading-relaxed text-zinc-600">
             For <span className="font-medium text-zinc-800">{lga}</span>. Add optional farm or
             community details so the advisory matches your situation. Your number is used on this
             request to generate tailored text and is not stored.
@@ -208,7 +208,7 @@ export function PersonalizedAlertsModal({
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-lg px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+          className="min-h-10 min-w-10 shrink-0 rounded-lg px-2 py-1 text-sm text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
           aria-label="Close"
         >
           ✕
@@ -229,7 +229,7 @@ export function PersonalizedAlertsModal({
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             placeholder="e.g. 08031234567 or +2348031234567"
-            className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500"
+            className="mt-1 min-h-11 w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 outline-none focus:border-zinc-500 sm:min-h-0 sm:text-sm"
             required
           />
         </div>
@@ -315,14 +315,14 @@ export function PersonalizedAlertsModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+            className="min-h-11 w-full rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 sm:min-h-0 sm:w-auto"
           >
             Cancel
           </button>
           <motion.button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-zinc-500"
+            className="min-h-11 w-full rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-zinc-500 sm:min-h-0 sm:w-auto"
             animate={
               loading && !reduce
                 ? { scale: [1, 1.03, 1] }

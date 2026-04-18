@@ -175,7 +175,7 @@ export function AlertForm() {
 
   return (
     <motion.div
-      className="w-full max-w-3xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
+      className="w-full min-w-0 max-w-3xl rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6"
       initial={reduce ? false : { opacity: 0, y: 22 }}
       animate={{ opacity: 1, y: 0 }}
       transition={
@@ -185,20 +185,23 @@ export function AlertForm() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <label htmlFor="lga" className="block text-sm font-semibold text-zinc-800">
+        <label
+          htmlFor="lga"
+          className="block text-sm font-semibold leading-snug text-zinc-800 sm:leading-normal"
+        >
           Local Government Area (LGA)
         </label>
         {directoryError ? (
           <p className="text-sm text-amber-800">{directoryError}</p>
         ) : null}
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
           <input
             id="lga"
             value={lga}
             onChange={(event) => setLga(event.target.value)}
             list="lga-options"
             placeholder={placeholder}
-            className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-zinc-900 outline-none ring-0 focus:border-zinc-500"
+            className="min-h-11 w-full min-w-0 rounded-xl border border-zinc-300 px-3 py-2.5 text-base text-zinc-900 outline-none ring-0 focus:border-zinc-500 sm:min-h-0 sm:px-4 sm:py-3"
           />
           <datalist id="lga-options">
             {knownLgas.map((entry) => (
@@ -208,7 +211,7 @@ export function AlertForm() {
           <motion.button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-zinc-900 px-5 py-3 font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-500"
+            className="min-h-11 w-full shrink-0 rounded-xl bg-zinc-900 px-5 py-3 text-base font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-500 sm:w-auto sm:min-h-0 sm:text-sm"
             whileTap={reduce ? {} : { scale: 0.97 }}
             animate={
               loading && !reduce
@@ -240,7 +243,7 @@ export function AlertForm() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: reduce ? 0.1 : 0.2 }}
-              className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-sm text-zinc-600"
+              className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-sm leading-snug text-zinc-600"
             >
               <span className="inline-flex items-center gap-1.5" aria-hidden>
                 {[0, 1, 2].map((i) => (
@@ -282,15 +285,15 @@ export function AlertForm() {
                   <summary className="inline list-none cursor-pointer bg-transparent p-0 text-sm font-normal leading-relaxed text-zinc-600 shadow-none ring-0 hover:text-zinc-800 hover:underline hover:underline-offset-4 focus:outline-none focus-visible:text-zinc-800 focus-visible:underline">
                     forecast details
                   </summary>
-                  <div className="mt-3 block w-full min-w-0 space-y-3 border-t border-zinc-200/90 pt-3 text-zinc-600">
-                    <p>
+                  <div className="mt-3 block w-full min-w-0 space-y-3 overflow-x-auto border-t border-zinc-200/90 pt-3 text-sm text-zinc-600 sm:text-base">
+                    <p className="min-w-0 wrap-break-word">
                       River discharge is for the Open-Meteo model grid near (
                       {result.openMeteo.gridLatitude.toFixed(3)}°,{" "}
                       {result.openMeteo.gridLongitude.toFixed(3)}°) — requested LGA point (
                       {result.openMeteo.requestedLatitude.toFixed(3)}°,{" "}
                       {result.openMeteo.requestedLongitude.toFixed(3)}°).
                     </p>
-                    <p>
+                    <p className="min-w-0 wrap-break-word">
                       Peak ensemble-max discharge:{" "}
                       <span className="font-medium text-zinc-800">
                         {result.openMeteo.peakDischargeM3s.toFixed(0)}{" "}
@@ -355,7 +358,7 @@ export function AlertForm() {
             }
           >
             <motion.div
-              className="rounded-xl border border-zinc-200 p-4"
+              className="min-w-0 rounded-xl border border-zinc-200 p-3 sm:p-4"
               variants={resultsStagger}
               initial="hidden"
               animate="show"
@@ -363,7 +366,7 @@ export function AlertForm() {
             <div
               role="tablist"
               aria-label="Seasonal outlook language"
-              className="mb-3 flex gap-1 border-b border-zinc-200 pb-0"
+              className="mb-3 flex min-w-0 flex-wrap gap-1 border-b border-zinc-200 pb-0"
             >
               <button
                 type="button"
@@ -372,7 +375,7 @@ export function AlertForm() {
                 aria-selected={outlookTab === "en"}
                 aria-controls="outlook-panel"
                 onClick={() => setOutlookTab("en")}
-                className={`rounded-t-lg px-4 py-2 text-sm font-medium transition-colors ${
+                className={`min-h-10 min-w-0 flex-1 rounded-t-lg px-3 py-2 text-sm font-medium transition-colors sm:min-h-0 sm:flex-none sm:px-4 ${
                   outlookTab === "en"
                     ? "border border-b-0 border-zinc-200 bg-white text-zinc-900 -mb-px"
                     : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
@@ -387,7 +390,7 @@ export function AlertForm() {
                 aria-selected={outlookTab === "local"}
                 aria-controls="outlook-panel"
                 onClick={() => setOutlookTab("local")}
-                className={`rounded-t-lg px-4 py-2 text-sm font-medium transition-colors ${
+                className={`min-h-10 min-w-0 flex-1 rounded-t-lg px-3 py-2 text-sm font-medium transition-colors sm:min-h-0 sm:flex-none sm:px-4 ${
                   outlookTab === "local"
                     ? "border border-b-0 border-zinc-200 bg-white text-zinc-900 -mb-px"
                     : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
@@ -419,7 +422,7 @@ export function AlertForm() {
                         : `${result.outlook.local.length} chars`}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-700">
+                  <p className="min-w-0 wrap-break-word text-sm leading-relaxed whitespace-pre-wrap text-zinc-700">
                     {outlookTab === "en" ? result.outlook.en : result.outlook.local}
                   </p>
                 </motion.div>
@@ -438,7 +441,7 @@ export function AlertForm() {
                 setAlertsModalNonce((n) => n + 1);
                 setAlertsModalOpen(true);
               }}
-              className="rounded-xl border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
+              className="min-h-11 w-full max-w-sm rounded-xl border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50 sm:min-h-0 sm:w-auto"
               whileHover={reduce ? {} : { scale: 1.03, y: -1 }}
               whileTap={reduce ? {} : { scale: 0.98 }}
               transition={{ type: "spring", stiffness: 400, damping: 22 }}

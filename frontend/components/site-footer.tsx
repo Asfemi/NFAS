@@ -191,27 +191,27 @@ export function SiteFooter() {
 
   return (
     <>
-      <footer className="pointer-events-auto fixed bottom-0 left-0 right-0 z-20 flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-        <div className="text-left text-xs text-zinc-200/95 sm:text-sm">
+      <footer className="pointer-events-auto fixed bottom-0 left-0 right-0 z-20 flex flex-col gap-2 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:px-4 sm:py-3 sm:pb-3">
+        <div className="min-w-0 text-left text-xs text-zinc-200/95 sm:text-sm">
           <button
             type="button"
             onClick={() => {
               setTeamOpen(false);
               setAttributionOpen(true);
             }}
-            className="bg-transparent p-0 text-left text-inherit underline decoration-zinc-400/80 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
+            className="min-h-10 w-full rounded-md bg-transparent p-2 text-left text-inherit underline decoration-zinc-400/80 underline-offset-4 transition-colors hover:text-white hover:decoration-white sm:min-h-0 sm:w-auto sm:p-0"
           >
             Attributions
           </button>
         </div>
-        <div className="shrink-0 text-right text-xs text-zinc-200/95 sm:text-sm">
+        <div className="min-w-0 text-left text-xs text-zinc-200/95 sm:text-right sm:text-sm">
           <button
             type="button"
             onClick={() => {
               setAttributionOpen(false);
               setTeamOpen(true);
             }}
-            className="bg-transparent p-0 text-left text-inherit underline decoration-zinc-400/80 underline-offset-4 transition-colors hover:text-white hover:decoration-white sm:text-right"
+            className="min-h-10 w-full rounded-md bg-transparent p-2 text-left text-pretty text-inherit underline decoration-zinc-400/80 underline-offset-4 transition-colors hover:text-white hover:decoration-white sm:min-h-0 sm:w-auto sm:p-0 sm:text-right"
           >
             Made with much love by the awesome NFAS team
           </button>

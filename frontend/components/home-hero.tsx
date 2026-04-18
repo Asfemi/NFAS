@@ -21,14 +21,14 @@ export function HomeHero() {
 
   if (reduce) {
     return (
-      <section className="text-center">
-        <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-200">
+      <section className="w-full max-w-3xl px-1 text-center sm:px-0">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-200 sm:text-sm">
           Flood Sentinel Nigeria
         </p>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+        <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl md:text-4xl">
           Nigeria Flood Alert System
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-zinc-200">
+        <p className="mx-auto mt-4 max-w-2xl text-pretty text-sm text-zinc-200 sm:text-base">
           Timely and actionable flood advisories for grassroots communities and farmers, delivered
           in plain language and multiple local languages.
         </p>
@@ -38,21 +38,27 @@ export function HomeHero() {
 
   return (
     <motion.section
-      className="text-center"
+      className="w-full max-w-3xl px-1 text-center sm:px-0"
       variants={container}
       initial="hidden"
       animate="show"
     >
       <motion.p
-        className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-200"
+        className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-200 sm:text-sm"
         variants={item}
       >
         Flood Sentinel Nigeria
       </motion.p>
-      <motion.h1 className="text-3xl font-bold tracking-tight sm:text-4xl" variants={item}>
+      <motion.h1
+        className="text-2xl font-bold tracking-tight text-balance sm:text-3xl md:text-4xl"
+        variants={item}
+      >
         Nigeria Flood Alert System
       </motion.h1>
-      <motion.p className="mx-auto mt-4 max-w-2xl text-zinc-200" variants={item}>
+      <motion.p
+        className="mx-auto mt-4 max-w-2xl text-pretty text-sm text-zinc-200 sm:text-base"
+        variants={item}
+      >
         Timely and actionable flood advisories for grassroots communities and farmers, delivered in
         plain language and multiple local languages.
       </motion.p>
