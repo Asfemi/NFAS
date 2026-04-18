@@ -1,12 +1,17 @@
 export type RiskLevel = "low" | "medium" | "high";
 
-export interface FloodRiskRecord {
+/** LGA catalogue entry: coordinates only; flood risk comes from Open-Meteo. */
+export interface LgaLocation {
   lga: string;
   state: string;
-  risk_level: RiskLevel;
-  timeframe: string;
   latitude: number;
   longitude: number;
+}
+
+/** Full row used for SMS copy after a live forecast is applied. */
+export interface FloodRiskRecord extends LgaLocation {
+  risk_level: RiskLevel;
+  timeframe: string;
 }
 
 export type LanguageCode = "en" | "ha" | "yo" | "ig";
@@ -20,9 +25,41 @@ export interface BilingualAlerts {
   local: string;
 }
 
+/** One day of GloFAS river discharge (ensemble max) for the model grid cell nearest the LGA. */
+export interface OpenMeteoFloodDay {
+  date: string;
+  riverDischargeMaxM3s: number;
+}
+
+/** Live 7-day slice from Open-Meteo Flood API (GloFAS) for the LGA coordinates. */
+export interface OpenMeteoFloodForecast {
+  requestedLatitude: number;
+  requestedLongitude: number;
+  /** WGS84 centre of the grid cell used (may differ slightly from the request). */
+  gridLatitude: number;
+  gridLongitude: number;
+  dischargeUnit: string;
+  forecastDays: number;
+  days: OpenMeteoFloodDay[];
+  peakDischargeM3s: number;
+  peakDate: string;
+  riskLevel: RiskLevel;
+}
+
 export interface FloodAlertResponse {
   record: FloodRiskRecord;
   /** Auto-derived from state: SW → Yoruba, SE/SS → Igbo, North/NC → Hausa. */
   localLanguage: RegionalLanguageCode;
   alerts: BilingualAlerts;
+  /** Always present: advisory is based on this forecast, not static catalogue risk. */
+  openMeteo: OpenMeteoFloodForecast;
+  /** True when phone + optional farm/community context was used to tailor the advisory. */
+  personalized?: boolean;
+}
+
+/** Optional SMS signup context (phone is validated but not sent to the model). */
+export interface PersonalizedAlertInput {
+  phone: string;
+  farmInfo?: string;
+  extraInfo?: string;
 }

@@ -16,6 +16,8 @@ interface GeminiResponse {
 function buildPrompt(
   record: FloodRiskRecord,
   localLanguage: RegionalLanguageCode,
+  hydrologyContext?: string,
+  siteContext?: string,
 ): string {
   const localName =
     localLanguage === "ha"
@@ -31,6 +33,12 @@ function buildPrompt(
     `State: ${record.state}`,
     `Risk level: ${record.risk_level}`,
     `Timeframe: ${record.timeframe}`,
+    ...(hydrologyContext
+      ? [
+          `Hydrology (use for wording; do not invent different numbers): ${hydrologyContext}`,
+        ]
+      : []),
+    ...(siteContext ? [`Site / subscriber context:\n${siteContext}`] : []),
     `Primary local language for this area: ${localName} (code: ${localLanguage})`,
     "",
     `Output a JSON object with keys exactly: "en" and "${localLanguage}".`,
@@ -40,6 +48,8 @@ function buildPrompt(
     "2) Clear action words, no hashtags, no markdown.",
     "3) Keep local names as given.",
     "4) Use plain language appropriate for community SMS.",
+    "5) If farm, crops, livestock, equipment, or community layout details are given, tailor concrete protective steps to that situation.",
+    "6) Never include phone numbers, bank details, or national IDs in the SMS strings.",
   ].join("\n");
 }
 
@@ -73,6 +83,8 @@ function parseJsonFromModel(
 export async function generateGeminiAlerts(
   record: FloodRiskRecord,
   localLanguage: RegionalLanguageCode,
+  hydrologyContext?: string,
+  siteContext?: string,
 ): Promise<BilingualAlerts | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -86,7 +98,13 @@ export async function generateGeminiAlerts(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: buildPrompt(record, localLanguage) }] }],
+      contents: [
+        {
+          parts: [
+            { text: buildPrompt(record, localLanguage, hydrologyContext, siteContext) },
+          ],
+        },
+      ],
       generationConfig: {
         temperature: 0.3,
         responseMimeType: "application/json",

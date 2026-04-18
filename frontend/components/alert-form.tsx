@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { PersonalizedAlertsModal } from "@/frontend/components/personalized-alerts-modal";
 
 type RegionalLanguageCode = "ha" | "yo" | "ig";
 
@@ -8,6 +9,24 @@ interface LgaDirectoryEntry {
   lga: string;
   state: string;
   localLanguage: RegionalLanguageCode;
+}
+
+interface OpenMeteoFloodDay {
+  date: string;
+  riverDischargeMaxM3s: number;
+}
+
+interface OpenMeteoFloodForecast {
+  requestedLatitude: number;
+  requestedLongitude: number;
+  gridLatitude: number;
+  gridLongitude: number;
+  dischargeUnit: string;
+  forecastDays: number;
+  days: OpenMeteoFloodDay[];
+  peakDischargeM3s: number;
+  peakDate: string;
+  riskLevel: "low" | "medium" | "high";
 }
 
 interface AlertResponse {
@@ -22,6 +41,8 @@ interface AlertResponse {
     en: string;
     local: string;
   };
+  openMeteo: OpenMeteoFloodForecast;
+  personalized?: boolean;
 }
 
 const regionalLabels: Record<RegionalLanguageCode, string> = {
@@ -36,6 +57,8 @@ export function AlertForm() {
   const [result, setResult] = useState<AlertResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [alertsModalOpen, setAlertsModalOpen] = useState(false);
+  const [alertsModalNonce, setAlertsModalNonce] = useState(0);
 
   useEffect(() => {
     async function loadLgas() {
@@ -83,6 +106,7 @@ export function AlertForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setAlertsModalOpen(false);
     setResult(null);
 
     if (!lga.trim()) {
@@ -163,11 +187,54 @@ export function AlertForm() {
       {result ? (
         <div className="mt-6 space-y-4">
           <div className="rounded-xl bg-zinc-100 p-3 text-sm text-zinc-700">
-            <span className="font-semibold">Risk:</span> {result.record.risk_level.toUpperCase()} in{" "}
-            {result.record.lga}, {result.record.state} ({result.record.timeframe})
+            <span className="font-semibold">Risk (live GloFAS):</span>{" "}
+            {result.record.risk_level.toUpperCase()} in {result.record.lga}, {result.record.state} (
+            {result.record.timeframe})
             <span className="mt-1 block text-zinc-600">
               Alerts: English + {regionalLabels[result.localLanguage]} only.
             </span>
+            <details
+              key={`forecast-details-${result.record.lga}-${result.record.state}`}
+              className="mt-2 [&_summary::-webkit-details-marker]:hidden"
+            >
+              <summary className="inline list-none cursor-pointer bg-transparent p-0 text-sm font-normal leading-normal text-zinc-600 shadow-none ring-0 hover:text-zinc-800 hover:underline hover:underline-offset-4 focus:outline-none focus-visible:text-zinc-800 focus-visible:underline">
+                Forecast details
+              </summary>
+              <div className="mt-3 space-y-3 border-t border-zinc-200/90 pt-3 text-zinc-600">
+                <p>
+                  River discharge is for the Open-Meteo model grid near (
+                  {result.openMeteo.gridLatitude.toFixed(3)}°,{" "}
+                  {result.openMeteo.gridLongitude.toFixed(3)}°) — requested LGA point (
+                  {result.openMeteo.requestedLatitude.toFixed(3)}°,{" "}
+                  {result.openMeteo.requestedLongitude.toFixed(3)}°).
+                </p>
+                <p>
+                  Peak ensemble-max discharge:{" "}
+                  <span className="font-medium text-zinc-800">
+                    {result.openMeteo.peakDischargeM3s.toFixed(0)} {result.openMeteo.dischargeUnit}
+                  </span>{" "}
+                  on {result.openMeteo.peakDate}.
+                </p>
+                <div>
+                  <h3 className="mb-2 font-semibold text-zinc-800">
+                    Daily river discharge max ({result.openMeteo.forecastDays} days)
+                  </h3>
+                  <ul className="grid gap-1 sm:grid-cols-2">
+                    {result.openMeteo.days.map((d) => (
+                      <li
+                        key={d.date}
+                        className="flex justify-between gap-2 rounded-lg bg-zinc-50/80 px-2 py-1 text-zinc-600"
+                      >
+                        <span>{d.date}</span>
+                        <span className="font-mono text-zinc-800">
+                          {d.riverDischargeMaxM3s.toFixed(0)} {result.openMeteo.dischargeUnit}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </details>
           </div>
           <article className="rounded-xl border border-zinc-200 p-4">
             <div className="mb-2 flex items-center justify-between text-sm">
@@ -185,7 +252,28 @@ export function AlertForm() {
             </div>
             <p className="text-zinc-700">{result.alerts.local}</p>
           </article>
+          <div className="flex justify-center pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAlertsModalNonce((n) => n + 1);
+                setAlertsModalOpen(true);
+              }}
+              className="rounded-xl border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
+            >
+              Get alerts
+            </button>
+          </div>
         </div>
+      ) : null}
+
+      {result ? (
+        <PersonalizedAlertsModal
+          key={`${result.record.lga}-${alertsModalNonce}`}
+          open={alertsModalOpen}
+          lga={result.record.lga}
+          onClose={() => setAlertsModalOpen(false)}
+        />
       ) : null}
     </div>
   );
