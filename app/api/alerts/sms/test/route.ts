@@ -1,15 +1,20 @@
-import twilio from "twilio";
+import { validateNigerianPhoneNumber } from "@/backend/sms";
+import { sendSmsTextViaSmsgate } from "@/backend/smsgate";
 
-const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+function smsgateConfigured(): boolean {
+  const user =
+    process.env.SMSGATE_USERNAME?.trim() || process.env.ASG_USERNAME?.trim();
+  const pass =
+    process.env.SMSGATE_PASSWORD?.trim() || process.env.ASG_PASSWORD?.trim();
+  return Boolean(user && pass);
+}
 
 export async function POST(request: Request) {
-  // Check if Twilio is configured
-  if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+  if (!smsgateConfigured()) {
     return Response.json(
       {
-        error: "Twilio not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in .env.local",
+        error:
+          "SMSGate not configured. Set SMSGATE_USERNAME and SMSGATE_PASSWORD (or ASG_USERNAME / ASG_PASSWORD).",
         configured: false,
       },
       { status: 400 },
@@ -26,35 +31,39 @@ export async function POST(request: Request) {
     const message = body?.message?.trim();
 
     if (!toNumber) {
+      return Response.json({ error: "Please provide a 'to' phone number" }, { status: 400 });
+    }
+
+    if (!validateNigerianPhoneNumber(toNumber)) {
       return Response.json(
-        { error: "Please provide a 'to' phone number" },
+        { error: "Invalid Nigerian phone number (use 0… or +234…)." },
         { status: 400 },
       );
     }
 
     if (!message) {
-      return Response.json(
-        { error: "Please provide a 'message'" },
-        { status: 400 },
-      );
+      return Response.json({ error: "Please provide a 'message'" }, { status: 400 });
     }
 
-    const twilioClient = twilio(twilioAccountSid, twilioAuthToken);
+    const result = await sendSmsTextViaSmsgate(toNumber, message);
 
-    const result = await twilioClient.messages.create({
-      body: message,
-      from: twilioPhoneNumber,
-      to: toNumber,
-    });
+    if (result.status === "sent") {
+      return Response.json({
+        success: true,
+        messageId: result.messageId,
+        status: result.status,
+        message: `SMS submitted via SMSGate to ${toNumber}`,
+        gateway: result,
+      });
+    }
 
-    return Response.json({
-      success: true,
-      messageId: result.sid,
-      status: result.status,
-      from: result.from,
-      to: result.to,
-      message: `SMS sent successfully to ${toNumber}`,
-    });
+    return Response.json(
+      {
+        error: "SMSGate did not accept the message",
+        gateway: result,
+      },
+      { status: result.skippedReason === "invalid_phone" ? 400 : 502 },
+    );
   } catch (error) {
     console.error("SMS test error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -69,27 +78,28 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+  const configured = smsgateConfigured();
+
+  if (!configured) {
     return Response.json({
       configured: false,
-      message: "Twilio is not configured. Please update .env.local with your credentials.",
+      message:
+        "SMSGate is not configured. Set SMSGATE_USERNAME and SMSGATE_PASSWORD in the server environment.",
       instructions: {
-        accountSid: "Missing TWILIO_ACCOUNT_SID",
-        authToken: "Missing TWILIO_AUTH_TOKEN",
-        phoneNumber: "Missing TWILIO_PHONE_NUMBER",
+        username: "SMSGATE_USERNAME or ASG_USERNAME",
+        password: "SMSGATE_PASSWORD or ASG_PASSWORD",
       },
     });
   }
 
   return Response.json({
     configured: true,
-    message: "Twilio is properly configured",
-    twilioPhoneNumber,
+    message: "SMSGate credentials are set (Android SMS Gateway cloud API).",
     usage: {
       method: "POST",
       url: "/api/alerts/sms/test",
       body: {
-        to: "+234XXXXXXXXXX (recipient phone number)",
+        to: "+234XXXXXXXXXX or 0XXXXXXXXXX",
         message: "Your test SMS message",
       },
     },
