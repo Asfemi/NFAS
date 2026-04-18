@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { PersonalizedAlertsModal } from "@/frontend/components/personalized-alerts-modal";
 
 type RegionalLanguageCode = "ha" | "yo" | "ig";
@@ -55,7 +56,18 @@ const regionalLabels: Record<RegionalLanguageCode, string> = {
   ig: "Igbo",
 };
 
+const resultsStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.06 } },
+};
+
+const resultsItem = {
+  hidden: { opacity: 0, y: 18, scale: 0.985 },
+  show: { opacity: 1, y: 0, scale: 1 },
+};
+
 export function AlertForm() {
+  const reduce = useReducedMotion();
   const [lga, setLga] = useState("");
   const [directory, setDirectory] = useState<LgaDirectoryEntry[]>([]);
   const [directoryError, setDirectoryError] = useState<string | null>(null);
@@ -162,7 +174,16 @@ export function AlertForm() {
   }
 
   return (
-    <div className="w-full max-w-3xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <motion.div
+      className="w-full max-w-3xl rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
+      initial={reduce ? false : { opacity: 0, y: 22 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={
+        reduce
+          ? { duration: 0.15 }
+          : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+      }
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <label htmlFor="lga" className="block text-sm font-semibold text-zinc-800">
           Local Government Area (LGA)
@@ -184,14 +205,64 @@ export function AlertForm() {
               <option key={entry} value={entry} />
             ))}
           </datalist>
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
             className="rounded-xl bg-zinc-900 px-5 py-3 font-medium text-white disabled:cursor-not-allowed disabled:bg-zinc-500"
+            whileTap={reduce ? {} : { scale: 0.97 }}
+            animate={
+              loading && !reduce
+                ? {
+                    scale: [1, 1.02, 1],
+                    boxShadow: [
+                      "0 0 0 0 rgba(24,24,27,0.4)",
+                      "0 0 0 12px rgba(24,24,27,0)",
+                      "0 0 0 0 rgba(24,24,27,0)",
+                    ],
+                  }
+                : { scale: 1 }
+            }
+            transition={
+              loading && !reduce
+                ? { repeat: Infinity, duration: 1.6, ease: "easeInOut" }
+                : {}
+            }
           >
-            {loading ? "Generating..." : "Get Alert"}
-          </button>
+            {loading ? "Analyzing Risk…" : "Get Status"}
+          </motion.button>
         </div>
+
+        <AnimatePresence initial={false}>
+          {loading ? (
+            <motion.div
+              key="alert-loading"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: reduce ? 0.1 : 0.2 }}
+              className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-sm text-zinc-600"
+            >
+              <span className="inline-flex items-center gap-1.5" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <motion.span
+                    key={i}
+                    className="inline-block h-2 w-2 rounded-full bg-zinc-600"
+                    animate={
+                      reduce ? {} : { y: [0, -8, 0], opacity: [0.4, 1, 0.4] }
+                    }
+                    transition={{
+                      repeat: reduce ? 0 : Infinity,
+                      duration: 0.5,
+                      delay: i * 0.12,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </span>
+              <span>Looking up your LGA, fetching live river data, and drafting your advisory…</span>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
         {languageForHint ? (
           <div className="text-sm leading-relaxed text-zinc-600">
             <span>
@@ -253,13 +324,42 @@ export function AlertForm() {
         ) : null}
       </form>
 
-      {error ? (
-        <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {error ? (
+          <motion.p
+            key={error}
+            role="alert"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: reduce ? 0.12 : 0.22 }}
+            className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
+            {error}
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
 
-      {result ? (
-        <div className="mt-6 space-y-4">
-          <div className="rounded-xl border border-zinc-200 p-4">
+      <AnimatePresence mode="wait">
+        {result ? (
+          <motion.div
+            key={`${result.record.lga}-${result.record.state}-results`}
+            className="mt-6 space-y-4"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 14, transition: { duration: 0.18 } }}
+            transition={
+              reduce
+                ? { duration: 0.18 }
+                : { type: "spring", damping: 16, stiffness: 260, mass: 0.85 }
+            }
+          >
+            <motion.div
+              className="rounded-xl border border-zinc-200 p-4"
+              variants={resultsStagger}
+              initial="hidden"
+              animate="show"
+            >
             <div
               role="tablist"
               aria-label="Seasonal outlook language"
@@ -296,39 +396,59 @@ export function AlertForm() {
                 {regionalLabels[result.localLanguage]}
               </button>
             </div>
-            <article
+            <motion.article
               role="tabpanel"
               id="outlook-panel"
               aria-labelledby={
                 outlookTab === "en" ? "outlook-tab-en" : "outlook-tab-local"
               }
+              variants={resultsItem}
             >
-              <div className="mb-2 flex justify-end">
-                <span className="text-xs text-zinc-400">
-                  {outlookTab === "en"
-                    ? `${result.outlook.en.length} chars`
-                    : `${result.outlook.local.length} chars`}
-                </span>
-              </div>
-              <p className="text-sm leading-relaxed text-zinc-700 whitespace-pre-wrap">
-                {outlookTab === "en" ? result.outlook.en : result.outlook.local}
-              </p>
-            </article>
-          </div>
-          <div className="flex justify-center pt-2">
-            <button
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={outlookTab}
+                  initial={{ opacity: 0, x: reduce ? 0 : outlookTab === "en" ? -10 : 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: reduce ? 0 : outlookTab === "en" ? 8 : -8 }}
+                  transition={{ duration: reduce ? 0.12 : 0.2 }}
+                >
+                  <div className="mb-2 flex justify-end">
+                    <span className="text-xs text-zinc-400">
+                      {outlookTab === "en"
+                        ? `${result.outlook.en.length} chars`
+                        : `${result.outlook.local.length} chars`}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-700">
+                    {outlookTab === "en" ? result.outlook.en : result.outlook.local}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </motion.article>
+          </motion.div>
+          <motion.div
+            className="flex justify-center pt-2"
+            variants={resultsItem}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.button
               type="button"
               onClick={() => {
                 setAlertsModalNonce((n) => n + 1);
                 setAlertsModalOpen(true);
               }}
               className="rounded-xl border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
+              whileHover={reduce ? {} : { scale: 1.03, y: -1 }}
+              whileTap={reduce ? {} : { scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
             >
               Get alerts
-            </button>
-          </div>
-        </div>
-      ) : null}
+            </motion.button>
+          </motion.div>
+        </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {result ? (
         <PersonalizedAlertsModal
@@ -338,6 +458,6 @@ export function AlertForm() {
           onClose={() => setAlertsModalOpen(false)}
         />
       ) : null}
-    </div>
+    </motion.div>
   );
 }

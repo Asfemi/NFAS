@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
+/** Keep in sync with `frontend/data/image-attributions.ts` (HOMEPAGE_BACKGROUND_CREDITS). */
 const images = [
   "/flood_images/image1170x530cropped.jpg",
   "/flood_images/49aa56b0-1620-11f0-a367-317c298ca3ca.jpg.webp",
